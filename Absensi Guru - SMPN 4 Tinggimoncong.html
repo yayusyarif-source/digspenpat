@@ -1,0 +1,506 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Absensi Guru - SMPN 4 Tinggimoncong</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--p:#1d4ed8;--pd:#1e3a8a;--bg:#f1f5f9;--ok:#166534;--okb:#dcfce7;--wr:#92400e;--wrb:#fef3c7;--er:#991b1b;--erb:#fee2e2;--in:#1e40af;--inb:#dbeafe}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:#0f172a;font-size:14px}
+header{background:linear-gradient(90deg,var(--pd),var(--p));color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px}
+header img{width:40px;height:40px;object-fit:contain;background:#fff;border-radius:8px;padding:2px}
+header .t{flex:1;min-width:0}header h1{margin:0;font-size:16px}header small{opacity:.85}
+header button{background:rgba(255,255,255,.18)}
+nav{display:flex;gap:4px;overflow-x:auto;background:#fff;padding:6px 10px;box-shadow:0 1px 3px rgba(0,0,0,.1);position:sticky;top:0;z-index:500}
+nav button{background:transparent;color:#334155;white-space:nowrap}
+nav button.on{background:var(--p);color:#fff}
+main{max-width:1000px;margin:0 auto;padding:12px}
+.card{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.card h3{margin:0 0 10px;font-size:15px}
+button,.btn{background:var(--p);color:#fff;border:0;border-radius:8px;padding:9px 14px;font-size:14px;cursor:pointer}
+button:hover{filter:brightness(1.1)}button:disabled{background:#94a3b8;cursor:not-allowed;filter:none}
+button.sec{background:#e2e8f0;color:#0f172a}button.dng{background:#dc2626}button.ok{background:#16a34a}button.sm{padding:5px 9px;font-size:12px}
+input,select,textarea{width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;font-family:inherit}
+label{display:block;font-size:13px;margin:8px 0 3px;color:#334155}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}.row>*{flex:1;min-width:140px}
+.row.fit>*{flex:0 0 auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:7px 8px;border-bottom:1px solid #e2e8f0;text-align:left;vertical-align:middle}
+th{background:#f8fafc;font-weight:600}
+.scroll{overflow-x:auto}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600}
+.ok{background:var(--okb);color:var(--ok)}.warn{background:var(--wrb);color:var(--wr)}.err{background:var(--erb);color:var(--er)}.info{background:var(--inb);color:var(--in)}.gray{background:#e2e8f0;color:#475569}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.stat{background:#fff;border-radius:12px;padding:12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.stat b{display:block;font-size:24px}
+#peta,#petaSet{height:260px;border-radius:10px}
+video{width:100%;max-width:360px;border-radius:10px;background:#000;transform:scaleX(-1);display:block}
+.note{font-size:12px;color:#64748b;margin-top:6px}
+.msg{padding:10px;border-radius:8px;margin-top:10px;font-size:13px}
+.thumb{width:34px;height:34px;border-radius:6px;object-fit:cover;vertical-align:middle}
+.login{max-width:380px;margin:6vh auto;padding:0 14px}
+.login .card{padding:22px}.login img{width:84px;height:84px;object-fit:contain;display:block;margin:0 auto 8px}
+.login h2{text-align:center;margin:0 0 4px}.login p{text-align:center;color:#64748b;margin:0 0 12px}
+footer{text-align:center;color:#64748b;font-size:12px;padding:14px}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;z-index:2000;padding:12px}
+.modal.hidden{display:none}
+.box{background:#fff;border-radius:12px;padding:18px;width:100%;max-width:440px;max-height:92vh;overflow:auto}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 16px;border-radius:8px;z-index:3000;display:none;max-width:90vw;text-align:center}
+.big{font-size:18px;font-weight:700}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal" class="modal hidden"><div class="box" id="modalBox"></div></div>
+<div id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js"></script>
+<script>
+/* ============ DATA ============ */
+const KEY='absenguru_smpn4_v1';
+const DEF=()=>({
+  settings:{sekolah:'SMPN 4 Tinggimoncong',alamat:'Kec. Tinggimoncong, Kab. Gowa',kepsek:'Syafruddin, S.Pd., M.Si.',nipKepsek:'',
+    lat:-5.2615916,lng:119.7878102,radius:100,jamMasuk:'07:30',jamPulang:'14:00',hariKerja:5,logo:''},
+  adminHash:null,guru:[],absen:[],izin:[]
+});
+let S=load();
+function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r){const d=DEF();r.settings=Object.assign(d.settings,r.settings);r.guru=r.guru||[];r.absen=r.absen||[];r.izin=r.izin||[];return r}}catch(e){}return DEF()}
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(S));return true}
+  catch(e){
+    // penyimpanan penuh: buang foto lama lalu coba lagi
+    S.absen.forEach(a=>{['masuk','pulang'].forEach(k=>{if(a[k])a[k].foto=''})});
+    try{localStorage.setItem(KEY,JSON.stringify(S));toast('Penyimpanan penuh, foto absen lama dihapus.');return true}catch(e2){toast('Gagal menyimpan data!');return false}
+  }
+}
+function prune(){const lim=new Date(Date.now()-45*864e5);const ls=ymd(lim);S.absen.forEach(a=>{if(a.tgl<ls)['masuk','pulang'].forEach(k=>{if(a[k])a[k].foto=''})})}
+
+/* ============ UTIL ============ */
+const $=id=>document.getElementById(id);
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const tgl=()=>ymd(new Date());
+const jam=()=>{const d=new Date();return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`};
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const BULAN=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const HARI=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const fmtTgl=s=>{const [y,m,d]=s.split('-').map(Number);const dt=new Date(y,m-1,d);return `${HARI[dt.getDay()]}, ${d} ${BULAN[m-1]} ${y}`};
+const fmtYm=ym=>{const [y,m]=ym.split('-').map(Number);return `${BULAN[m-1]} ${y}`};
+function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',3200)}
+function openModal(h){$('modalBox').innerHTML=h;$('modal').classList.remove('hidden')}
+function closeModal(){$('modal').classList.add('hidden');$('modalBox').innerHTML=''}
+async function H(p){
+  const s='sg-smpn4:'+p;
+  if(window.crypto&&crypto.subtle){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+  let h=5381;for(const c of s)h=((h<<5)+h+c.charCodeAt(0))>>>0;return 'x'+h;
+}
+function haversine(a,b){const R=6371000,r=x=>x*Math.PI/180;const dLa=r(b[0]-a[0]),dLo=r(b[1]-a[1]);
+  const q=Math.sin(dLa/2)**2+Math.cos(r(a[0]))*Math.cos(r(b[0]))*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(q))}
+function download(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+const guruById=id=>S.guru.find(g=>g.id===id);
+const isWork=d=>d.getDay()>=1&&d.getDay()<=Number(S.settings.hariKerja);
+const logoImg=()=>S.settings.logo?`<img src="${S.settings.logo}" alt="Logo">`:'';
+
+/* ============ SESI ============ */
+let sess=null;try{sess=JSON.parse(sessionStorage.getItem('sess'))}catch(e){}
+let tab=null,maps=[],stream=null,chart=null,posNow=null;
+function setSess(s){sess=s;if(s)sessionStorage.setItem('sess',JSON.stringify(s));else sessionStorage.removeItem('sess')}
+function cleanup(){maps.forEach(m=>{try{m.remove()}catch(e){}});maps=[];stopCam();if(chart){chart.destroy();chart=null}}
+function go(t){tab=t;render()}
+function logout(){setSess(null);tab=null;render()}
+
+/* ============ RENDER UTAMA ============ */
+function render(){
+  cleanup();
+  const app=$('app');
+  if(!sess){app.innerHTML=viewLogin();return}
+  const admin=sess.role==='admin';
+  const tabs=admin?[['dash','Beranda'],['guru','Data Guru'],['rekap','Rekap'],['izin','Izin/Sakit'],['set','Pengaturan']]:[['absen','Absen'],['riwayat','Riwayat'],['profil','Profil']];
+  if(!tab||!tabs.some(t=>t[0]===tab))tab=tabs[0][0];
+  const nama=admin?'Administrator':(guruById(sess.id)||{}).nama||'';
+  if(!admin&&!guruById(sess.id)){logout();return}
+  const views={dash:viewDash,guru:viewGuru,rekap:viewRekap,izin:viewIzin,set:viewSet,absen:viewAbsen,riwayat:viewRiwayat,profil:viewProfil};
+  app.innerHTML=`<header>${logoImg()}<div class="t"><h1>Absensi Guru</h1><small>${esc(S.settings.sekolah)} · ${esc(nama)}</small></div><button onclick="logout()">Keluar</button></header>
+  <nav>${tabs.map(t=>`<button class="${t[0]===tab?'on':''}" onclick="go('${t[0]}')">${t[1]}</button>`).join('')}</nav>
+  <main>${views[tab]()}</main>
+  <footer>Kepala Sekolah: ${esc(S.settings.kepsek)}<br>${esc(S.settings.sekolah)} · ${esc(S.settings.alamat)}</footer>`;
+  const binds={dash:null,guru:null,rekap:bindRekap,izin:null,set:bindSet,absen:bindAbsen,riwayat:null,profil:null};
+  if(binds[tab])binds[tab]();
+}
+
+/* ============ LOGIN ============ */
+function viewLogin(){
+  return `<div class="login"><div class="card">${logoImg()}<h2>Absensi Guru</h2><p>${esc(S.settings.sekolah)}</p>
+  <label>NIP</label><input id="lNip" autocomplete="username" placeholder="NIP guru (admin: admin)">
+  <label>Kata Sandi</label><input id="lPass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+  <div id="lErr" class="msg err" style="display:none"></div>
+  <button style="width:100%;margin-top:14px" onclick="doLogin()">Masuk</button>
+  <p class="note" style="margin-top:12px">Admin awal: NIP <b>admin</b>, sandi <b>admin123</b>. Segera ganti di menu Pengaturan.</p></div></div>`;
+}
+async function doLogin(){
+  const nip=$('lNip').value.trim(),pw=$('lPass').value;const er=$('lErr');
+  const fail=t=>{er.textContent=t;er.style.display='block'};
+  if(!nip||!pw)return fail('NIP dan kata sandi wajib diisi.');
+  const h=await H(pw);
+  if(nip.toLowerCase()==='admin'){
+    if(h!==S.adminHash)return fail('NIP atau kata sandi salah.');
+    setSess({role:'admin'});tab=null;render();return;
+  }
+  const g=S.guru.find(x=>x.nip===nip);
+  if(!g||g.passHash!==h)return fail('NIP atau kata sandi salah.');
+  setSess({role:'guru',id:g.id});tab=null;render();
+}
+
+/* ============ KAMERA & WAJAH ============ */
+function stopCam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}}
+async function startCam(){
+  const v=$('vid');if(!v)return false;
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:480}},audio:false});v.srcObject=stream;await v.play();return true}
+  catch(e){setInfo('camInfo','Kamera tidak dapat diakses. Izinkan akses kamera pada browser (wajib HTTPS).','err');return false}
+}
+let faceP=null;
+function loadFace(){
+  if(faceP)return faceP;
+  faceP=(async()=>{
+    if(!window.faceapi)throw new Error('lib');
+    const u='https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/';
+    await faceapi.nets.tinyFaceDetector.loadFromUri(u);
+    await faceapi.nets.faceLandmark68Net.loadFromUri(u);
+    await faceapi.nets.faceRecognitionNet.loadFromUri(u);
+    return true;
+  })();
+  faceP.catch(()=>{faceP=null});
+  return faceP;
+}
+async function faceDesc(){
+  const r=await faceapi.detectSingleFace($('vid'),new faceapi.TinyFaceDetectorOptions({inputSize:320,scoreThreshold:.5})).withFaceLandmarks().withFaceDescriptor();
+  return r?Array.from(r.descriptor):null;
+}
+function snap(w=72){
+  const v=$('vid');if(!v||!v.videoWidth)return '';
+  const c=document.createElement('canvas');const r=v.videoHeight/v.videoWidth;c.width=w;c.height=Math.round(w*r);
+  const x=c.getContext('2d');x.translate(w,0);x.scale(-1,1);x.drawImage(v,0,0,c.width,c.height);
+  return c.toDataURL('image/jpeg',.45);
+}
+function setInfo(id,t,cls){const e=$(id);if(!e)return;e.className='msg '+(cls||'info');e.textContent=t;e.style.display=t?'block':'none'}
+
+/* ============ GURU: ABSEN ============ */
+function absenHari(gid,t=tgl()){return S.absen.find(a=>a.guruId===gid&&a.tgl===t)}
+function viewAbsen(){
+  const g=guruById(sess.id);const a=absenHari(g.id);const iz=S.izin.find(x=>x.guruId===g.id&&x.tgl===tgl());
+  const m=a&&a.masuk,p=a&&a.pulang;
+  return `<div class="card"><div class="big">${fmtTgl(tgl())}</div>
+  <div class="grid" style="margin-top:10px">
+   <div class="stat">Masuk<b>${m?m.t.slice(0,5):'-'}</b>${m?`<span class="badge ${m.status==='Terlambat'?'warn':'ok'}">${m.status}</span>`:''}</div>
+   <div class="stat">Pulang<b>${p?p.t.slice(0,5):'-'}</b>${p?`<span class="badge ok">Tercatat</span>`:''}</div>
+   <div class="stat">Batas masuk<b>${esc(S.settings.jamMasuk)}</b><span class="note">Pulang ${esc(S.settings.jamPulang)}</span></div>
+  </div>${iz?`<div class="msg info">Hari ini tercatat <b>${esc(iz.jenis)}</b>${iz.ket?': '+esc(iz.ket):''}.</div>`:''}</div>
+  <div class="card"><h3>1. Lokasi</h3><div id="peta"></div><div id="lokInfo" class="msg info">Mencari lokasi...</div>
+   <button class="sec sm" style="margin-top:8px" onclick="cekLokasi()">Perbarui Lokasi</button></div>
+  <div class="card"><h3>2. Scan Wajah</h3><video id="vid" autoplay playsinline muted></video>
+   <div id="camInfo" class="msg info">Menyiapkan kamera...</div>
+   ${g.desc?'':`<div class="msg warn">Wajah Anda belum terdaftar. <button class="sm" onclick="daftarWajah()">Daftarkan Wajah</button></div>`}
+   <div class="row fit" style="margin-top:12px">
+    <button class="ok" id="btnMasuk" onclick="doAbsen('masuk')" ${m?'disabled':''}>Absen Masuk</button>
+    <button id="btnPulang" onclick="doAbsen('pulang')" ${(!m||p)?'disabled':''}>Absen Pulang</button></div>
+   <div id="absInfo"></div></div>`;
+}
+let petaG={};
+function bindAbsen(){
+  const s=S.settings,c=[s.lat,s.lng];
+  const m=L.map('peta').setView(c,17);maps.push(m);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(m);
+  L.marker(c).addTo(m).bindPopup(esc(s.sekolah));
+  L.circle(c,{radius:s.radius,color:'#2563eb',fillOpacity:.12}).addTo(m);
+  petaG={m,saya:null,akur:null};
+  cekLokasi();
+  startCam().then(ok=>{if(ok){setInfo('camInfo','Kamera siap. Menyiapkan pengenalan wajah...');
+    loadFace().then(()=>setInfo('camInfo','Kamera dan pengenalan wajah siap.','ok')).catch(()=>setInfo('camInfo','Model pengenalan wajah gagal dimuat (cek internet). Absen akan memakai foto selfie saja.','warn'))}});
+}
+function getPos(){return new Promise((res,rej)=>{
+  if(!navigator.geolocation)return rej(new Error('Browser tidak mendukung geolokasi.'));
+  navigator.geolocation.getCurrentPosition(p=>res(p.coords),e=>rej(new Error({1:'Izin lokasi ditolak.',2:'Lokasi tidak tersedia.',3:'Waktu pencarian lokasi habis.'}[e.code]||'Gagal mengambil lokasi.')),{enableHighAccuracy:true,timeout:15000,maximumAge:0})})}
+async function cekLokasi(){
+  setInfo('lokInfo','Mencari lokasi...');
+  try{
+    const c=await getPos();posNow=c;const s=S.settings;
+    const d=haversine([c.latitude,c.longitude],[s.lat,s.lng]);
+    if(petaG.m){
+      if(petaG.saya)petaG.m.removeLayer(petaG.saya);if(petaG.akur)petaG.m.removeLayer(petaG.akur);
+      petaG.saya=L.circleMarker([c.latitude,c.longitude],{radius:8,color:'#fff',weight:2,fillColor:'#dc2626',fillOpacity:1}).addTo(petaG.m);
+      petaG.akur=L.circle([c.latitude,c.longitude],{radius:c.accuracy,color:'#dc2626',weight:1,fillOpacity:.08}).addTo(petaG.m);
+    }
+    const dalam=d<=s.radius;
+    setInfo('lokInfo',`${dalam?'Anda berada di dalam area absen.':'Anda di luar area absen.'} Jarak ke sekolah ${Math.round(d)} m (batas ${s.radius} m), akurasi GPS ±${Math.round(c.accuracy)} m.`,dalam?'ok':'err');
+  }catch(e){setInfo('lokInfo',e.message,'err')}
+}
+async function daftarWajah(){
+  const g=guruById(sess.id);setInfo('camInfo','Memproses wajah...');
+  try{await loadFace();const d=await faceDesc();if(!d)return setInfo('camInfo','Wajah tidak terdeteksi. Hadapkan wajah ke kamera dengan cahaya cukup.','err');
+    g.desc=d;save();toast('Wajah berhasil didaftarkan.');render();}
+  catch(e){setInfo('camInfo','Pengenalan wajah tidak tersedia. Periksa koneksi internet lalu muat ulang.','err')}
+}
+async function doAbsen(jenis){
+  const g=guruById(sess.id);const bm=$('btnMasuk'),bp=$('btnPulang');bm.disabled=bp.disabled=true;
+  const bebas=()=>{const a=absenHari(g.id);bm.disabled=!!(a&&a.masuk);bp.disabled=!(a&&a.masuk)||!!(a&&a.pulang)};
+  const gagal=t=>{setInfo('absInfo',t,'err');bebas()};
+  setInfo('absInfo','Memeriksa lokasi...');
+  let c;try{c=await getPos()}catch(e){return gagal(e.message)}
+  const s=S.settings;const d=haversine([c.latitude,c.longitude],[s.lat,s.lng]);
+  if(d>s.radius)return gagal(`Anda berada ${Math.round(d)} m dari sekolah, di luar radius ${s.radius} m.`);
+  if(!stream)return gagal('Kamera belum aktif. Izinkan akses kamera lalu muat ulang halaman.');
+  setInfo('absInfo','Memverifikasi wajah...');
+  let verif='foto saja';
+  let modelOk=false;try{await loadFace();modelOk=true}catch(e){}
+  if(modelOk){
+    if(!g.desc)return gagal('Wajah Anda belum terdaftar. Tekan "Daftarkan Wajah" terlebih dahulu.');
+    let desc;try{desc=await faceDesc()}catch(e){return gagal('Gagal memproses wajah.')}
+    if(!desc)return gagal('Wajah tidak terdeteksi. Hadapkan wajah ke kamera.');
+    const dist=faceapi.euclideanDistance(desc,g.desc);
+    if(dist>0.5)return gagal('Wajah tidak cocok dengan data terdaftar. Coba lagi.');
+    verif='wajah cocok';
+  }
+  const foto=snap();const t=jam();let a=absenHari(g.id);
+  if(!a){a={id:uid(),guruId:g.id,tgl:tgl(),masuk:null,pulang:null};S.absen.push(a)}
+  if(jenis==='masuk'){
+    if(a.masuk)return gagal('Anda sudah absen masuk hari ini.');
+    a.masuk={t,lat:c.latitude,lng:c.longitude,jarak:Math.round(d),foto,verif,status:t.slice(0,5)>s.jamMasuk?'Terlambat':'Hadir'};
+  }else{
+    if(!a.masuk)return gagal('Anda belum absen masuk.');
+    if(a.pulang)return gagal('Anda sudah absen pulang hari ini.');
+    a.pulang={t,lat:c.latitude,lng:c.longitude,jarak:Math.round(d),foto,verif,awal:t.slice(0,5)<s.jamPulang};
+  }
+  save();toast(`Absen ${jenis} berhasil pukul ${t.slice(0,5)}.`);render();
+}
+
+/* ============ GURU: RIWAYAT & PROFIL ============ */
+let riwYm=tgl().slice(0,7);
+function viewRiwayat(){
+  const g=guruById(sess.id);
+  const list=S.absen.filter(a=>a.guruId===g.id&&a.tgl.startsWith(riwYm)).sort((a,b)=>b.tgl.localeCompare(a.tgl));
+  const iz=S.izin.filter(x=>x.guruId===g.id&&x.tgl.startsWith(riwYm));
+  return `<div class="card"><label>Bulan</label><input type="month" value="${riwYm}" onchange="riwYm=this.value||riwYm;render()">
+  <div class="scroll" style="margin-top:10px"><table><tr><th>Tanggal</th><th>Masuk</th><th>Pulang</th><th>Status</th></tr>
+  ${list.map(a=>`<tr><td>${fmtTgl(a.tgl)}</td><td>${a.masuk?a.masuk.t.slice(0,5):'-'}</td><td>${a.pulang?a.pulang.t.slice(0,5):'-'}</td>
+   <td>${a.masuk?`<span class="badge ${a.masuk.status==='Terlambat'?'warn':'ok'}">${a.masuk.status}</span>`:'-'}</td></tr>`).join('')}
+  ${iz.map(x=>`<tr><td>${fmtTgl(x.tgl)}</td><td>-</td><td>-</td><td><span class="badge info">${esc(x.jenis)}</span></td></tr>`).join('')}
+  ${!list.length&&!iz.length?'<tr><td colspan="4" class="note">Belum ada data bulan ini.</td></tr>':''}</table></div></div>`;
+}
+function viewProfil(){
+  const g=guruById(sess.id);
+  return `<div class="card"><h3>Profil</h3><table><tr><td>Nama</td><td>${esc(g.nama)}</td></tr><tr><td>NIP</td><td>${esc(g.nip)}</td></tr><tr><td>Jabatan/Mapel</td><td>${esc(g.mapel||'-')}</td></tr>
+  <tr><td>Data wajah</td><td>${g.desc?'<span class="badge ok">Terdaftar</span> (reset oleh admin bila perlu)':'<span class="badge warn">Belum terdaftar</span> - daftarkan di menu Absen'}</td></tr></table></div>
+  <div class="card"><h3>Ganti Kata Sandi</h3><label>Sandi lama</label><input id="pLama" type="password"><label>Sandi baru (min. 6 karakter)</label><input id="pBaru" type="password">
+  <button style="margin-top:12px" onclick="gantiSandiSendiri()">Simpan</button></div>`;
+}
+async function gantiSandiSendiri(){
+  const g=guruById(sess.id);const l=$('pLama').value,b=$('pBaru').value;
+  if(await H(l)!==g.passHash)return toast('Sandi lama salah.');
+  if(b.length<6)return toast('Sandi baru minimal 6 karakter.');
+  g.passHash=await H(b);save();toast('Kata sandi diganti.');render();
+}
+
+/* ============ ADMIN: BERANDA ============ */
+function viewDash(){
+  const t=tgl();let hadir=0,telat=0,izin=0,belum=0;
+  const rows=S.guru.map(g=>{
+    const a=absenHari(g.id,t);const iz=S.izin.find(x=>x.guruId===g.id&&x.tgl===t);
+    let st='Belum absen',cls='gray';
+    if(a&&a.masuk){st=a.masuk.status;cls=st==='Terlambat'?'warn':'ok';st==='Terlambat'?telat++:hadir++}
+    else if(iz){st=iz.jenis;cls='info';izin++}else belum++;
+    return `<tr><td>${a&&a.masuk&&a.masuk.foto?`<img class="thumb" src="${a.masuk.foto}">`:''}</td><td>${esc(g.nama)}<br><span class="note">${esc(g.nip)}</span></td>
+    <td><span class="badge ${cls}">${st}</span></td><td>${a&&a.masuk?a.masuk.t.slice(0,5):'-'}</td><td>${a&&a.pulang?a.pulang.t.slice(0,5):'-'}</td><td>${a&&a.masuk?a.masuk.jarak+' m':'-'}</td></tr>`}).join('');
+  return `<div class="card"><div class="big">${fmtTgl(t)}</div></div>
+  <div class="grid" style="margin-bottom:12px"><div class="stat"><b>${S.guru.length}</b>Total guru</div><div class="stat"><b style="color:#16a34a">${hadir}</b>Hadir</div>
+  <div class="stat"><b style="color:#d97706">${telat}</b>Terlambat</div><div class="stat"><b style="color:#2563eb">${izin}</b>Izin/Sakit</div><div class="stat"><b style="color:#64748b">${belum}</b>Belum absen</div></div>
+  <div class="card"><h3>Kehadiran Hari Ini</h3><div class="scroll"><table><tr><th></th><th>Guru</th><th>Status</th><th>Masuk</th><th>Pulang</th><th>Jarak</th></tr>
+  ${rows||'<tr><td colspan="6" class="note">Belum ada data guru. Tambahkan di menu Data Guru.</td></tr>'}</table></div></div>`;
+}
+
+/* ============ ADMIN: DATA GURU ============ */
+function viewGuru(){
+  return `<div class="card"><div class="row fit" style="justify-content:space-between"><h3 style="margin:0">Data Guru (${S.guru.length})</h3><button onclick="formGuru()">+ Tambah Guru</button></div>
+  <div class="scroll" style="margin-top:10px"><table><tr><th>Nama</th><th>NIP</th><th>Jabatan/Mapel</th><th>Wajah</th><th>Aksi</th></tr>
+  ${S.guru.map(g=>`<tr><td>${esc(g.nama)}</td><td>${esc(g.nip)}</td><td>${esc(g.mapel||'-')}</td><td>${g.desc?'<span class="badge ok">Ada</span>':'<span class="badge gray">Belum</span>'}</td>
+  <td style="white-space:nowrap"><button class="sm sec" onclick="formGuru('${g.id}')">Ubah</button> <button class="sm sec" onclick="formSandi('${g.id}')">Sandi</button>
+  ${g.desc?`<button class="sm sec" onclick="resetWajah('${g.id}')">Reset wajah</button> `:''}<button class="sm dng" onclick="hapusGuru('${g.id}')">Hapus</button></td></tr>`).join('')||'<tr><td colspan="5" class="note">Belum ada guru.</td></tr>'}</table></div></div>`;
+}
+function formGuru(id){
+  const g=id?guruById(id):{nama:'',nip:'',mapel:''};
+  openModal(`<h3>${id?'Ubah':'Tambah'} Guru</h3><label>Nama lengkap</label><input id="fNama" value="${esc(g.nama)}">
+  <label>NIP (dipakai untuk login)</label><input id="fNip" value="${esc(g.nip)}">
+  <label>Jabatan / Mata pelajaran</label><input id="fMapel" value="${esc(g.mapel||'')}">
+  ${id?'':'<label>Kata sandi awal (min. 6 karakter)</label><input id="fPass" type="text">'}
+  <div class="row fit" style="margin-top:14px"><button onclick="simpanGuru('${id||''}')">Simpan</button><button class="sec" onclick="closeModal()">Batal</button></div>`);
+}
+async function simpanGuru(id){
+  const nama=$('fNama').value.trim(),nip=$('fNip').value.trim(),mapel=$('fMapel').value.trim();
+  if(!nama||!nip)return toast('Nama dan NIP wajib diisi.');
+  if(nip.toLowerCase()==='admin')return toast('NIP tidak boleh "admin".');
+  if(S.guru.some(x=>x.nip===nip&&x.id!==id))return toast('NIP sudah dipakai guru lain.');
+  if(id){const g=guruById(id);g.nama=nama;g.nip=nip;g.mapel=mapel}
+  else{const pw=$('fPass').value;if(pw.length<6)return toast('Kata sandi minimal 6 karakter.');S.guru.push({id:uid(),nama,nip,mapel,passHash:await H(pw),desc:null})}
+  save();closeModal();render();toast('Data guru disimpan.');
+}
+function formSandi(id){const g=guruById(id);
+  openModal(`<h3>Ganti Kata Sandi</h3><p>${esc(g.nama)}</p><label>Sandi baru (min. 6 karakter)</label><input id="fSandi" type="text">
+  <div class="row fit" style="margin-top:14px"><button onclick="simpanSandi('${id}')">Simpan</button><button class="sec" onclick="closeModal()">Batal</button></div>`)}
+async function simpanSandi(id){const v=$('fSandi').value;if(v.length<6)return toast('Minimal 6 karakter.');guruById(id).passHash=await H(v);save();closeModal();toast('Kata sandi diganti.')}
+function resetWajah(id){if(confirm('Hapus data wajah guru ini? Guru harus mendaftarkan ulang.')){guruById(id).desc=null;save();render()}}
+function hapusGuru(id){const g=guruById(id);if(!confirm(`Hapus ${g.nama} beserta seluruh data absennya?`))return;
+  S.guru=S.guru.filter(x=>x.id!==id);S.absen=S.absen.filter(x=>x.guruId!==id);S.izin=S.izin.filter(x=>x.guruId!==id);save();render()}
+
+/* ============ ADMIN: IZIN/SAKIT ============ */
+function viewIzin(){
+  const list=[...S.izin].sort((a,b)=>b.tgl.localeCompare(a.tgl));
+  return `<div class="card"><h3>Catat Izin / Sakit</h3><div class="row"><div><label>Guru</label><select id="zG">${S.guru.map(g=>`<option value="${g.id}">${esc(g.nama)}</option>`).join('')}</select></div>
+  <div><label>Tanggal</label><input id="zT" type="date" value="${tgl()}"></div><div><label>Jenis</label><select id="zJ"><option>Izin</option><option>Sakit</option></select></div></div>
+  <label>Keterangan</label><input id="zK"><button style="margin-top:12px" onclick="simpanIzin()">Simpan</button></div>
+  <div class="card"><h3>Daftar</h3><div class="scroll"><table><tr><th>Tanggal</th><th>Guru</th><th>Jenis</th><th>Keterangan</th><th></th></tr>
+  ${list.map(x=>`<tr><td>${fmtTgl(x.tgl)}</td><td>${esc((guruById(x.guruId)||{}).nama||'-')}</td><td><span class="badge info">${esc(x.jenis)}</span></td><td>${esc(x.ket||'')}</td>
+  <td><button class="sm dng" onclick="hapusIzin('${x.id}')">Hapus</button></td></tr>`).join('')||'<tr><td colspan="5" class="note">Belum ada data.</td></tr>'}</table></div></div>`;
+}
+function simpanIzin(){
+  const gid=$('zG').value,t=$('zT').value;if(!gid||!t)return toast('Pilih guru dan tanggal.');
+  if(S.izin.some(x=>x.guruId===gid&&x.tgl===t))return toast('Guru ini sudah punya catatan di tanggal tersebut.');
+  S.izin.push({id:uid(),guruId:gid,tgl:t,jenis:$('zJ').value,ket:$('zK').value.trim()});save();render();toast('Tersimpan.');
+}
+function hapusIzin(id){S.izin=S.izin.filter(x=>x.id!==id);save();render()}
+
+/* ============ ADMIN: REKAP ============ */
+let rkYm=tgl().slice(0,7);
+function hitungRekap(ym){
+  const [y,m]=ym.split('-').map(Number);const n=new Date(y,m,0).getDate();const hariIni=tgl();
+  const hk=[];for(let d=1;d<=n;d++){const s=`${ym}-${pad(d)}`;if(isWork(new Date(y,m-1,d))&&s<hariIni)hk.push(s)}
+  return S.guru.map(g=>{
+    const recs=S.absen.filter(a=>a.guruId===g.id&&a.tgl.startsWith(ym)&&a.masuk);
+    const telat=recs.filter(a=>a.masuk.status==='Terlambat').length;
+    const iz=S.izin.filter(x=>x.guruId===g.id&&x.tgl.startsWith(ym));
+    const izin=iz.filter(x=>x.jenis==='Izin').length,sakit=iz.filter(x=>x.jenis==='Sakit').length;
+    const alpa=hk.filter(s=>!recs.some(a=>a.tgl===s)&&!iz.some(x=>x.tgl===s)).length;
+    return {g,hk:hk.length,hadir:recs.length,telat,izin,sakit,alpa};
+  });
+}
+function viewRekap(){
+  const r=hitungRekap(rkYm);
+  return `<div class="card"><div class="row"><div><label>Bulan</label><input type="month" id="rkBln" value="${rkYm}" onchange="rkYm=this.value||rkYm;render()"></div>
+  <div class="row fit"><button onclick="expPdf()">PDF</button><button class="ok" onclick="expXlsx()">Excel</button><button class="sec" onclick="expCsv()">CSV</button></div></div>
+  <div class="note">Hari kerja dihitung ${S.settings.hariKerja==6?'Senin-Sabtu':'Senin-Jumat'} sampai kemarin. Kolom Hadir sudah termasuk yang terlambat.</div></div>
+  <div class="card"><h3>Grafik Kehadiran - ${fmtYm(rkYm)}</h3><div style="position:relative;height:300px"><canvas id="grafik"></canvas></div></div>
+  <div class="card"><h3>Rekap Bulanan</h3><div class="scroll"><table><tr><th>No</th><th>Nama</th><th>NIP</th><th>Hari Kerja</th><th>Hadir</th><th>Terlambat</th><th>Izin</th><th>Sakit</th><th>Alpa</th><th>%</th></tr>
+  ${r.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.g.nama)}</td><td>${esc(x.g.nip)}</td><td>${x.hk}</td><td>${x.hadir}</td><td>${x.telat}</td><td>${x.izin}</td><td>${x.sakit}</td><td>${x.alpa}</td><td>${x.hk?Math.round(x.hadir/x.hk*100):0}%</td></tr>`).join('')||'<tr><td colspan="10" class="note">Belum ada data guru.</td></tr>'}</table></div></div>`;
+}
+function bindRekap(){
+  const r=hitungRekap(rkYm);const cv=$('grafik');if(!cv||!window.Chart)return;
+  chart=new Chart(cv,{type:'bar',data:{labels:r.map(x=>x.g.nama.split(' ')[0]),datasets:[
+    {label:'Tepat waktu',data:r.map(x=>x.hadir-x.telat),backgroundColor:'#16a34a'},
+    {label:'Terlambat',data:r.map(x=>x.telat),backgroundColor:'#f59e0b'},
+    {label:'Izin',data:r.map(x=>x.izin),backgroundColor:'#3b82f6'},
+    {label:'Sakit',data:r.map(x=>x.sakit),backgroundColor:'#8b5cf6'},
+    {label:'Alpa',data:r.map(x=>x.alpa),backgroundColor:'#dc2626'}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,ticks:{precision:0}}}}});
+}
+function dataTabel(ym){
+  const r=hitungRekap(ym);
+  return {head:['No','Nama','NIP','Hari Kerja','Hadir','Terlambat','Izin','Sakit','Alpa','Kehadiran (%)'],
+    body:r.map((x,i)=>[i+1,x.g.nama,x.g.nip,x.hk,x.hadir,x.telat,x.izin,x.sakit,x.alpa,x.hk?Math.round(x.hadir/x.hk*100):0])};
+}
+function dataDetail(ym){
+  const rows=[['Tanggal','Nama','NIP','Masuk','Status','Pulang','Jarak masuk (m)','Verifikasi']];
+  S.absen.filter(a=>a.tgl.startsWith(ym)).sort((a,b)=>a.tgl.localeCompare(b.tgl)).forEach(a=>{const g=guruById(a.guruId);if(!g)return;
+    rows.push([a.tgl,g.nama,g.nip,a.masuk?a.masuk.t.slice(0,5):'',a.masuk?a.masuk.status:'',a.pulang?a.pulang.t.slice(0,5):'',a.masuk?a.masuk.jarak:'',a.masuk?a.masuk.verif:''])});
+  S.izin.filter(x=>x.tgl.startsWith(ym)).forEach(x=>{const g=guruById(x.guruId);if(g)rows.push([x.tgl,g.nama,g.nip,'',x.jenis,'','',x.ket||''])});
+  return rows;
+}
+function expCsv(){
+  const t=dataTabel(rkYm);const q=v=>`"${String(v).replace(/"/g,'""')}"`;
+  const csv='\ufeff'+[t.head,...t.body].map(r=>r.map(q).join(',')).join('\r\n');
+  download(`rekap-absensi-guru-${rkYm}.csv`,new Blob([csv],{type:'text/csv;charset=utf-8'}));
+}
+function expXlsx(){
+  if(!window.XLSX)return toast('Pustaka Excel belum termuat. Periksa internet.');
+  const t=dataTabel(rkYm);const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([[`Rekap Absensi Guru ${S.settings.sekolah}`],[fmtYm(rkYm)],[],t.head,...t.body]),'Rekap');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(dataDetail(rkYm)),'Detail');
+  XLSX.writeFile(wb,`rekap-absensi-guru-${rkYm}.xlsx`);
+}
+function expPdf(){
+  if(!window.jspdf)return toast('Pustaka PDF belum termuat. Periksa internet.');
+  const {jsPDF}=window.jspdf;const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});const s=S.settings;let x=14;
+  if(s.logo){try{doc.addImage(s.logo,'PNG',14,8,20,20);x=38}catch(e){}}
+  doc.setFontSize(14);doc.setFont(undefined,'bold');doc.text('REKAP ABSENSI GURU',x,14);
+  doc.setFontSize(12);doc.text(s.sekolah.toUpperCase(),x,20);doc.setFont(undefined,'normal');doc.setFontSize(10);doc.text(`${s.alamat} · Bulan ${fmtYm(rkYm)}`,x,26);
+  const t=dataTabel(rkYm);
+  doc.autoTable({head:[t.head],body:t.body,startY:34,styles:{fontSize:9},headStyles:{fillColor:[29,78,216]}});
+  let y=doc.lastAutoTable.finalY+12;if(y>165){doc.addPage();y=20}
+  const d=new Date();const xr=doc.internal.pageSize.getWidth()-80;
+  doc.setFontSize(10);doc.text(`Tinggimoncong, ${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}`,xr,y);
+  doc.text('Kepala Sekolah,',xr,y+6);doc.setFont(undefined,'bold');doc.text(s.kepsek,xr,y+30);doc.setFont(undefined,'normal');
+  if(s.nipKepsek)doc.text('NIP. '+s.nipKepsek,xr,y+35);
+  doc.save(`rekap-absensi-guru-${rkYm}.pdf`);
+}
+
+/* ============ ADMIN: PENGATURAN ============ */
+function viewSet(){
+  const s=S.settings;
+  return `<div class="card"><h3>Identitas Sekolah</h3>
+  <label>Nama sekolah</label><input id="sNama" value="${esc(s.sekolah)}"><label>Alamat</label><input id="sAlamat" value="${esc(s.alamat)}">
+  <div class="row"><div><label>Kepala sekolah</label><input id="sKep" value="${esc(s.kepsek)}"></div><div><label>NIP kepala sekolah</label><input id="sNipKep" value="${esc(s.nipKepsek)}"></div></div>
+  <label>Logo sekolah (PNG/JPG)</label><input type="file" id="sLogo" accept="image/*" onchange="pilihLogo(this)"><div id="logoPrev" style="margin-top:8px">${s.logo?`<img src="${s.logo}" style="height:60px"> <button class="sm dng" onclick="hapusLogo()">Hapus logo</button>`:''}</div></div>
+  <div class="card"><h3>Lokasi &amp; Jam</h3><p class="note">Klik peta untuk memindahkan titik sekolah.</p><div id="petaSet"></div>
+  <div class="row"><div><label>Lintang</label><input id="sLat" type="number" step="any" value="${s.lat}"></div><div><label>Bujur</label><input id="sLng" type="number" step="any" value="${s.lng}"></div>
+  <div><label>Radius (m)</label><input id="sRad" type="number" min="10" value="${s.radius}"></div></div>
+  <div class="row"><div><label>Batas jam masuk</label><input id="sMasuk" type="time" value="${s.jamMasuk}"></div><div><label>Jam pulang</label><input id="sPulang" type="time" value="${s.jamPulang}"></div>
+  <div><label>Hari kerja</label><select id="sHk"><option value="5" ${s.hariKerja==5?'selected':''}>Senin-Jumat</option><option value="6" ${s.hariKerja==6?'selected':''}>Senin-Sabtu</option></select></div></div>
+  <button style="margin-top:12px" onclick="simpanSet()">Simpan Pengaturan</button></div>
+  <div class="card"><h3>Ganti Sandi Admin</h3><label>Sandi baru (min. 6 karakter)</label><input id="sAdm" type="password"><button style="margin-top:10px" onclick="gantiAdmin()">Ganti Sandi</button></div>
+  <div class="card"><h3>Cadangan Data</h3><p class="note">Data tersimpan di browser perangkat ini. Unduh cadangan secara berkala.</p>
+  <div class="row fit"><button onclick="cadangkan()">Unduh Cadangan (JSON)</button><label class="btn sec" style="margin:0">Pulihkan<input type="file" accept=".json" style="display:none" onchange="pulihkan(this)"></label></div></div>`;
+}
+let sMark,sCirc;
+function bindSet(){
+  const s=S.settings,c=[s.lat,s.lng];const m=L.map('petaSet').setView(c,17);maps.push(m);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(m);
+  sMark=L.marker(c).addTo(m);sCirc=L.circle(c,{radius:s.radius,color:'#2563eb',fillOpacity:.12}).addTo(m);
+  m.on('click',e=>{$('sLat').value=e.latlng.lat.toFixed(7);$('sLng').value=e.latlng.lng.toFixed(7);sMark.setLatLng(e.latlng);sCirc.setLatLng(e.latlng)});
+  $('sRad').addEventListener('input',()=>sCirc.setRadius(Math.max(10,Number($('sRad').value)||100)));
+}
+function pilihLogo(inp){
+  const f=inp.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,200/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);S.settings.logo=c.toDataURL('image/png');save();render();toast('Logo disimpan.')};im.src=r.result};r.readAsDataURL(f);
+}
+function hapusLogo(){S.settings.logo='';save();render()}
+function simpanSet(){
+  const lat=parseFloat($('sLat').value),lng=parseFloat($('sLng').value),rad=parseInt($('sRad').value);
+  if(isNaN(lat)||isNaN(lng)||!(rad>=10))return toast('Lintang, bujur, dan radius (min. 10 m) harus valid.');
+  Object.assign(S.settings,{sekolah:$('sNama').value.trim()||'Sekolah',alamat:$('sAlamat').value.trim(),kepsek:$('sKep').value.trim(),nipKepsek:$('sNipKep').value.trim(),
+    lat,lng,radius:rad,jamMasuk:$('sMasuk').value||'07:30',jamPulang:$('sPulang').value||'14:00',hariKerja:Number($('sHk').value)});
+  save();render();toast('Pengaturan disimpan.');
+}
+async function gantiAdmin(){const v=$('sAdm').value;if(v.length<6)return toast('Minimal 6 karakter.');S.adminHash=await H(v);save();$('sAdm').value='';toast('Sandi admin diganti.')}
+function cadangkan(){download(`cadangan-absensi-guru-${tgl()}.json`,new Blob([JSON.stringify(S)],{type:'application/json'}))}
+function pulihkan(inp){
+  const f=inp.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.settings||!Array.isArray(d.guru))throw 0;if(!confirm('Data saat ini akan diganti dengan cadangan. Lanjutkan?'))return;S=d;save();render();toast('Data dipulihkan.')}catch(e){toast('File cadangan tidak valid.')}};r.readAsText(f);
+}
+
+/* ============ MULAI ============ */
+(async()=>{
+  if(!S.adminHash){S.adminHash=await H('admin123');}
+  prune();save();render();
+})();
+</script>
+</body>
+</html>
+
+</body></html>

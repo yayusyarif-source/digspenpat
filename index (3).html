@@ -1,0 +1,1934 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1E3A8A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Absensi Guru">
+<title>Absensi Guru – SMPN 4 Tinggimoncong</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" id="favicon" href="data:,">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<!-- ============ LIBRARY EKSTERNAL (versi dikunci) ============ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- Firebase (compat, skrip biasa) – dipakai di Mode Cloud -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<!-- Pemindai wajah (berjalan di browser; model dimuat dari CDN saat pertama dipakai) -->
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js"></script>
+
+<style>
+/* ============ TEMA WARNA (ubah di sini) ============ */
+:root{
+  --biru:#1E3A8A; --biru-muda:#3B82F6; --hijau:#10B981; --hijau-tua:#047857;
+  --merah:#DC2626; --kuning:#F59E0B; --abu:#64748B; --bg:#F1F5F9; --kartu:#FFFFFF;
+  --teks:#0F172A; --garis:#E2E8F0; --radius:12px;
+  --shadow:0 4px 14px rgba(15,23,42,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Poppins','Inter',system-ui,sans-serif;background:var(--bg);color:var(--teks);font-size:14px;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+button,input,select,textarea{font-family:inherit;font-size:inherit}
+a{color:var(--biru-muda)}
+code{background:#EEF2FF;padding:1px 6px;border-radius:5px;font-size:12.5px}
+
+/* ---------- Header ---------- */
+.header{background:linear-gradient(120deg,var(--biru) 0%,#2563EB 55%,var(--hijau) 130%);color:#fff;box-shadow:var(--shadow)}
+.header-top{display:flex;align-items:center;gap:14px;padding:12px 20px;max-width:1280px;margin:0 auto;flex-wrap:wrap}
+.logo{width:56px;height:56px;border-radius:50%;background:#fff;padding:4px;object-fit:contain;flex-shrink:0}
+.brand h1{font-size:19px;font-weight:700;letter-spacing:.5px;line-height:1.2}
+.brand p{font-size:12px;opacity:.9}
+.spacer{flex:1}
+.userchip{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.15);padding:6px 8px 6px 14px;border-radius:30px;font-size:13px}
+.userchip small{display:block;opacity:.85;font-size:11px}
+.nav{background:rgba(0,0,0,.18)}
+.nav-in{max-width:1280px;margin:0 auto;display:flex;gap:4px;padding:0 14px;overflow-x:auto}
+.nav button{background:none;border:0;color:#fff;padding:11px 14px;cursor:pointer;opacity:.82;font-weight:500;white-space:nowrap;border-bottom:3px solid transparent;min-height:44px}
+.nav button:hover{opacity:1}
+.nav button.on{opacity:1;border-bottom-color:var(--hijau);background:rgba(255,255,255,.08)}
+.banner{padding:8px 14px;text-align:center;font-size:13px;font-weight:500}
+.banner.demo{background:#FEF3C7;color:#92400E}
+.banner.net{background:#FEE2E2;color:#991B1B}
+
+/* ---------- Layout ---------- */
+main{flex:1;max-width:1280px;width:100%;margin:0 auto;padding:20px 16px 30px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.card{background:var(--kartu);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+.card h2{font-size:16px;margin-bottom:12px;display:flex;align-items:center;gap:8px;color:var(--biru)}
+.card h2 i{color:var(--hijau)}
+.page-title{font-size:20px;font-weight:700;color:var(--biru);margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.muted{color:var(--abu);font-size:12.5px}
+.center{text-align:center}
+
+/* ---------- Form & tombol ---------- */
+label{display:block;font-weight:500;font-size:12.5px;margin:10px 0 4px;color:#334155}
+input[type=text],input[type=password],input[type=number],input[type=date],input[type=time],input[type=month],select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--garis);border-radius:9px;background:#fff;outline:none;transition:.15s;min-height:40px}
+input:focus,select:focus,textarea:focus{border-color:var(--biru-muda);box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+input[readonly]{background:#F8FAFC}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;border-radius:9px;border:1.5px solid var(--garis);background:#fff;cursor:pointer;font-weight:500;transition:.15s;color:var(--teks);min-height:40px}
+.btn:hover{background:#F8FAFC}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.primary{background:var(--biru);border-color:var(--biru);color:#fff}
+.btn.primary:hover{background:#1e40af}
+.btn.green{background:var(--hijau);border-color:var(--hijau);color:#fff}
+.btn.green:hover{background:var(--hijau-tua)}
+.btn.red{background:var(--merah);border-color:var(--merah);color:#fff}
+.btn.sm{padding:5px 10px;font-size:12px;min-height:32px}
+.btn.big{padding:16px 20px;font-size:16px;font-weight:600;border-radius:12px;width:100%;min-height:52px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.end{justify-content:flex-end}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));gap:0 14px}
+.pwrow{position:relative}
+.pwrow button{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:none;padding:8px 10px;cursor:pointer;color:var(--abu);min-height:36px}
+.pwrow input{padding-right:44px}
+
+/* ---------- Tabel ---------- */
+.tw{overflow-x:auto;border-radius:10px;border:1px solid var(--garis)}
+table{width:100%;border-collapse:collapse;min-width:640px;background:#fff}
+th{background:#EFF6FF;color:var(--biru);text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.4px;padding:10px 12px;white-space:nowrap}
+td{padding:9px 12px;border-top:1px solid var(--garis);font-size:13px;vertical-align:middle}
+tr:hover td{background:#FAFCFF}
+tr.off td{opacity:.55}
+td.c,th.c{text-align:center}
+.avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;background:var(--biru-muda);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0}
+.who{display:flex;align-items:center;gap:10px}
+
+/* ---------- Badge ---------- */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.b-Hadir{background:#D1FAE5;color:#065F46}.b-Terlambat{background:#FEF3C7;color:#92400E}
+.b-Izin{background:#DBEAFE;color:#1E40AF}.b-Sakit{background:#FCE7F3;color:#9D174D}
+.b-Cuti{background:#EDE9FE;color:#5B21B6}.b-Alpa{background:#FEE2E2;color:#991B1B}
+.b-Belum{background:#F1F5F9;color:#475569}.b-out{background:#FEE2E2;color:#991B1B}.b-in{background:#D1FAE5;color:#065F46}
+
+/* ---------- Statistik ---------- */
+.stat{display:flex;align-items:center;gap:14px}
+.stat .ic{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;flex-shrink:0}
+.stat b{font-size:24px;display:block;line-height:1.1}
+.stat span{font-size:12px;color:var(--abu)}
+
+/* ---------- Absen ---------- */
+.clock{text-align:center;padding:6px 0 14px}
+.clock .t{font-size:42px;font-weight:700;color:var(--biru);letter-spacing:2px;line-height:1}
+.clock .d{color:var(--abu);margin-top:6px}
+#map,#setmap{height:300px;border-radius:10px;border:1px solid var(--garis);z-index:0;background:#E2E8F0}
+.geo{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.geo div{background:#F8FAFC;border-radius:8px;padding:8px 10px;font-size:12px}
+.geo b{display:block;font-size:13px;word-break:break-all}
+.alert{padding:10px 14px;border-radius:9px;font-size:13px;margin-top:10px;display:flex;gap:10px;align-items:flex-start}
+.alert.ok{background:#D1FAE5;color:#065F46}.alert.warn{background:#FEF3C7;color:#92400E}.alert.bad{background:#FEE2E2;color:#991B1B}.alert.info{background:#DBEAFE;color:#1E40AF}
+
+/* ---------- Login ---------- */
+.login-wrap{max-width:440px;margin:24px auto}
+.tabs{display:flex;background:#E2E8F0;border-radius:10px;padding:4px;margin-bottom:6px}
+.tabs button{flex:1;border:0;background:none;padding:9px;border-radius:8px;cursor:pointer;font-weight:600;color:var(--abu);min-height:40px}
+.tabs button.on{background:#fff;color:var(--biru);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+
+/* ---------- Modal & toast ---------- */
+.overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:1000}
+.modal{background:#fff;border-radius:14px;padding:20px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto}
+.modal h3{color:var(--biru);margin-bottom:6px}
+.modal video{width:100%;border-radius:10px;background:#000;margin:10px 0;transform:scaleX(-1)}
+#toasts{position:fixed;top:14px;right:14px;z-index:2000;display:flex;flex-direction:column;gap:8px;max-width:calc(100vw - 28px)}
+.toast{background:#fff;border-left:5px solid var(--biru);padding:12px 16px;border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:flex;gap:10px;align-items:flex-start;animation:in .25s ease;min-width:240px}
+.toast.success{border-color:var(--hijau)}.toast.error{border-color:var(--merah)}.toast.warn{border-color:var(--kuning)}
+.toast.success i{color:var(--hijau)}.toast.error i{color:var(--merah)}.toast.warn i{color:var(--kuning)}
+@keyframes in{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+
+/* ---------- Pemindai wajah ---------- */
+.facebox{position:relative;background:#000;border-radius:12px;overflow:hidden;margin:10px 0;aspect-ratio:4/3}
+.modal .facebox video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block;margin:0;border-radius:0}
+.facebox::after{content:'';position:absolute;inset:10% 24%;border:3px dashed rgba(255,255,255,.75);border-radius:50%;pointer-events:none}
+
+/* ---------- Footer ---------- */
+footer{background:#0F172A;color:#CBD5E1;text-align:center;padding:16px;font-size:12.5px;line-height:1.7}
+footer b{color:#fff}
+.chartbox{position:relative;height:340px}
+.thumb{width:36px;height:36px;border-radius:6px;object-fit:cover;cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{background:#EFF6FF;color:var(--biru);padding:4px 10px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:6px}
+.chip button{border:0;background:none;cursor:pointer;color:var(--merah)}
+@media(max-width:600px){
+  .brand h1{font-size:15px}.logo{width:44px;height:44px}.clock .t{font-size:34px}
+  .geo{grid-template-columns:1fr}.card{padding:14px}.header-top{padding:10px 14px}
+  input[type=text],input[type=password],input[type=number],input[type=date],input[type=time],input[type=month],select,textarea{font-size:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= HEADER ================= -->
+<header class="header">
+  <div class="header-top">
+    <img id="hLogo" class="logo" alt="Logo sekolah">
+    <div class="brand">
+      <h1 id="hName">SMPN 4 TINGGIMONCONG</h1>
+      <p id="hSub">Aplikasi Absensi Kehadiran Guru</p>
+    </div>
+    <div class="spacer"></div>
+    <div id="hUser"></div>
+  </div>
+  <nav class="nav" id="hNav" style="display:none"><div class="nav-in" id="hNavIn"></div></nav>
+</header>
+<div id="demoBanner" class="banner demo" style="display:none"><i class="fa-solid fa-triangle-exclamation"></i> MODE DEMO – data hanya tersimpan di perangkat ini. Isi <code>FIREBASE_CONFIG</code> agar semua perangkat memakai data yang sama.</div>
+<div id="netBanner" class="banner net" style="display:none"><i class="fa-solid fa-wifi"></i> Tidak ada koneksi internet. Absensi tidak dapat disimpan sampai terhubung kembali.</div>
+
+<main id="app"></main>
+
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div>Kepala Sekolah: <b id="fName">Syafruddin, S.Pd., M.Si.</b></div>
+  <div>NIP. <b id="fNip">19690727 199503 1 003</b></div>
+  <div id="fCopy"></div>
+</footer>
+
+<div id="toasts"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   APLIKASI ABSENSI GURU – SMPN 4 TINGGIMONCONG
+   Dua mode:
+   • MODE CLOUD  : isi FIREBASE_CONFIG di bawah → data tersimpan di Firebase,
+                   dipakai bersama oleh semua perangkat & akun.
+   • MODE DEMO   : FIREBASE_CONFIG dibiarkan kosong → data hanya di browser ini.
+   Panduan lengkap: lihat berkas PANDUAN-SETUP.md
+   ===================================================================== */
+
+/* ---------- 1. KONFIGURASI FIREBASE (isi dari Firebase Console → Project settings → Your apps) ---------- */
+const FIREBASE_CONFIG = {
+  apiKey: '',
+  authDomain: '',
+  projectId: '',
+  storageBucket: '',
+  messagingSenderId: '',
+  appId: ''
+};
+const CLOUD = !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId);
+const EMAIL_DOMAIN = 'absensi.smpn4tm.local';   // email semu untuk login NIP (tidak perlu diubah)
+const MIN_PASS = 6;                              // batas minimal Firebase
+
+/* ---------- 2. DATA GURU AWAL (9 guru SMPN 4 Tinggimoncong) ---------- */
+const DATA_GURU_AWAL = [
+  { nip: '196907271995031003', name: 'Syafruddin, S.Pd., M.Si.',       mapel: '' },   // Kepala Sekolah
+  { nip: '197106252010012004', name: 'Nurjannah, S.Pd.',               mapel: '' },
+  { nip: '198905110001',       name: 'Nawir, S.Pd.Gr',                 mapel: '' },
+  { nip: '200011120002',       name: 'St. Ulil Asmi, S.Pd., Gr.',      mapel: '' },
+  { nip: '198710020003',       name: 'Satriani, S.Pd., Gr.',           mapel: '' },
+  { nip: '199906070004',       name: 'Nurmiati, S.Pd., Gr.',           mapel: '' },
+  { nip: '200002080005',       name: 'Ibnu Nandar Almudatsir, S.Pd.',  mapel: '' },
+  { nip: '200007110006',       name: 'Nur Indah Sari, S.Pd.',          mapel: '' },
+  { nip: '200901010007',       name: 'Satriah, A.Ma.',                 mapel: '' }
+];
+const SANDI_AWAL = '123456';
+
+/* ---------- 3. PENGATURAN BAWAAN (dapat diubah admin di menu Pengaturan) ---------- */
+const DEFAULT_SETTINGS = {
+  schoolName: 'SMPN 4 Tinggimoncong',
+  instansi:   'Dinas Pendidikan Kabupaten Gowa',
+  address:    'Kec. Tinggimoncong, Kabupaten Gowa, Sulawesi Selatan',
+  logo:       '',                      // kosong = logo bawaan; atau unggah di Pengaturan
+  lat: -5.2615916, lng: 119.7878102,   // titik lokasi sekolah
+  radius: 100,                         // radius maksimal (meter)
+  lateTime: '07:15',                   // lewat jam ini = Terlambat
+  outTime:  '14:00',                   // jam pulang standar
+  workDays: [1,2,3,4,5],               // 0=Minggu ... 6=Sabtu
+  holidays: [],                        // [{date:'2026-12-25', name:'Natal'}]
+  headName: 'Syafruddin, S.Pd., M.Si.',
+  headNip:  '19690727 199503 1 003',
+  city: 'Tinggimoncong',
+  reverseGeo: true,                    // cari alamat otomatis (butuh internet)
+  simulate: false,                     // mode uji lokasi (tanpa GPS asli)
+  faceRequired: true,                  // wajib scan wajah saat absen
+  faceLiveness: true,                  // minta kedip mata
+  faceThreshold: 0.5,                  // 0.45 ketat – 0.6 longgar
+  adminUser: 'admin',                  // hanya dipakai di MODE DEMO
+  adminPass: 'admin123'                // hanya dipakai di MODE DEMO
+};
+
+/* ---------- Logo bawaan (SVG) ---------- */
+const DEFAULT_LOGO = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+ '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1E3A8A"/><stop offset="1" stop-color="#10B981"/></linearGradient></defs>'+
+ '<path d="M50 4 90 18v30c0 24-17 42-40 48C27 90 10 72 10 48V18z" fill="url(#g)" stroke="#fff" stroke-width="3"/>'+
+ '<path d="M26 40c8-3 17-3 24 3 7-6 16-6 24-3v28c-8-3-17-3-24 3-7-6-16-6-24-3z" fill="#fff"/><path d="M50 43v28" stroke="#1E3A8A" stroke-width="3"/>'+
+ '<text x="50" y="30" font-size="11" font-weight="700" text-anchor="middle" fill="#fff" font-family="Arial">SMPN 4</text></svg>');
+
+const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const HARI  = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const STATUS_LIST = ['Hadir','Terlambat','Izin','Sakit','Cuti'];
+
+/* ---------- Utilitas ---------- */
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const pad = n => String(n).padStart(2,'0');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const toSec = t => { const p=String(t||'0:0:0').split(':').map(Number); return (p[0]||0)*3600+(p[1]||0)*60+(p[2]||0); };
+const fmtNip = n => { n=String(n||'').replace(/\D/g,''); return n.length===18 ? `${n.slice(0,8)} ${n.slice(8,14)} ${n.slice(14,15)} ${n.slice(15)}` : n; };
+const initials = n => String(n||'?').replace(/[^A-Za-z\s]/g,'').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase() || '?';
+const isDigits = s => /^\d+$/.test(s);
+
+/* ---------- Waktu: selalu WITA (UTC+8) dan memakai jam server bila Mode Cloud ---------- */
+let clockOffset = 0;                                  // selisih jam server – jam perangkat (ms)
+const serverNow = () => Date.now() + clockOffset;
+function W(ms = serverNow()){
+  const d = new Date(ms + 8*3600*1000);
+  return {y:d.getUTCFullYear(), m:d.getUTCMonth(), d:d.getUTCDate(), dow:d.getUTCDay(), hh:d.getUTCHours(), mm:d.getUTCMinutes(), ss:d.getUTCSeconds()};
+}
+const ymdOf = (y,m,d) => `${y}-${pad(m+1)}-${pad(d)}`;
+const todayStr = () => { const w=W(); return ymdOf(w.y,w.m,w.d); };
+const nowHMS   = () => { const w=W(); return `${pad(w.hh)}:${pad(w.mm)}:${pad(w.ss)}`; };
+const tglIndo  = (ms) => { const w=W(ms); return `${w.d} ${BULAN[w.m]} ${w.y}`; };
+const tglIndoStr = s => { const [y,m,d]=String(s).split('-').map(Number); return `${d} ${BULAN[m-1]} ${y}`; };
+const dowOf = ds => { const [y,m,d]=ds.split('-').map(Number); return new Date(Date.UTC(y,m-1,d)).getUTCDay(); };
+const daysIn = (y,m) => new Date(Date.UTC(y,m+1,0)).getUTCDate();
+const ymOf = (y,m) => `${y}-${pad(m+1)}`;
+
+const LS = {
+  get(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:JSON.parse(v); }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ toast('Penyimpanan browser penuh. Hapus foto lama atau pakai Mode Cloud.','error'); return false; } },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+
+function haversine(lat1,lon1,lat2,lon2){
+  const R=6371000, rad=x=>x*Math.PI/180;
+  const a=Math.sin(rad(lat2-lat1)/2)**2+Math.cos(rad(lat1))*Math.cos(rad(lat2))*Math.sin(rad(lon2-lon1)/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+
+/* ---------- Toast ---------- */
+function toast(msg,type='info'){
+  const ic={success:'fa-circle-check',error:'fa-circle-xmark',warn:'fa-triangle-exclamation',info:'fa-circle-info'}[type]||'fa-circle-info';
+  const box=$('#toasts'); if(!box) return;
+  const el=document.createElement('div'); el.className='toast '+type;
+  el.innerHTML=`<i class="fa-solid ${ic}"></i><div>${esc(msg)}</div>`;
+  box.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='.3s'; setTimeout(()=>el.remove(),300); }, type==='error'?6500:4200);
+}
+
+/* ---------- Modal ---------- */
+function openModal(html){
+  closeModal();
+  const o=document.createElement('div'); o.className='overlay'; o.id='modalOv';
+  o.innerHTML=`<div class="modal">${html}</div>`;
+  o.addEventListener('mousedown',e=>{ if(e.target===o && !o.dataset.lock) closeModal(); });
+  document.body.appendChild(o); return o;
+}
+function closeModal(){ const o=$('#modalOv'); if(o) o.remove(); }
+function confirmBox(msg){ return window.confirm(msg); }
+
+/* Cegah klik ganda / proses tumpang-tindih */
+let _lock=false;
+async function locked(fn){
+  if(_lock){ toast('Mohon tunggu, proses sedang berjalan…','warn'); return; }
+  _lock=true;
+  try{ return await fn(); } finally{ _lock=false; }
+}
+
+/* ---------- Galat (error) ---------- */
+function appErr(msg){ const e=new Error(msg); e.app=true; return e; }
+function codeErr(code,msg){ const e=new Error(msg||code); e.code=code; return e; }
+function fbMsg(e){
+  if(!e) return 'Terjadi kesalahan.';
+  if(e.app) return e.message;
+  const M={
+    'auth/invalid-credential':'NIP/username atau kata sandi salah.',
+    'auth/wrong-password':'NIP/username atau kata sandi salah.',
+    'auth/user-not-found':'NIP/username atau kata sandi salah.',
+    'auth/invalid-email':'NIP/username tidak valid.',
+    'auth/too-many-requests':'Terlalu banyak percobaan. Coba lagi beberapa menit.',
+    'auth/network-request-failed':'Tidak ada koneksi internet.',
+    'auth/email-already-in-use':'NIP/username sudah terdaftar.',
+    'auth/weak-password':'Kata sandi terlalu lemah (minimal 6 karakter).',
+    'auth/user-disabled':'Akun dinonaktifkan.',
+    'auth/operation-not-allowed':'Metode Email/Password belum diaktifkan di Firebase → Authentication → Sign-in method.',
+    'auth/requires-recent-login':'Silakan keluar lalu masuk kembali, kemudian ulangi.',
+    'auth/unauthorized-domain':'Domain situs ini belum ditambahkan di Firebase → Authentication → Settings → Authorized domains.',
+    'auth/api-key-not-valid':'API key Firebase tidak valid. Periksa FIREBASE_CONFIG.',
+    'permission-denied':'Akses ditolak oleh aturan keamanan. Pastikan firestore.rules sudah dipublikasikan dan Anda masuk dengan akun yang benar.',
+    'unavailable':'Server tidak dapat dihubungi. Periksa koneksi internet.',
+    'already-exists':'Data sudah ada.',
+    'not-found':'Data tidak ditemukan.',
+    'resource-exhausted':'Kuota harian Firebase (paket gratis) habis. Coba lagi besok.',
+    'app/akun-terkunci':'Akun Firebase untuk NIP ini sudah ada, tetapi sandi tersimpannya tidak cocok. Hapus akunnya di Firebase Console → Authentication → Users, lalu coba lagi.'
+  };
+  if(e.code && M[e.code]) return M[e.code];
+  return (e.message && !/^Firebase:/.test(e.message)) ? e.message : 'Terjadi kesalahan. Coba lagi.';
+}
+
+/* ---------- Data (cache di memori; sumber kebenaran = Store) ---------- */
+let settings = Object.assign({}, DEFAULT_SETTINGS);
+let teachers = [];     // {nip,name,mapel,photo,aktif,password,face:[[128],[128],[128]],urut}
+let att      = [];     // {id,nip,date,status,note,in:{...},out:{...}}
+let logs     = [];     // {t,actor,action,detail}
+
+const seedTeachers = () => DATA_GURU_AWAL.map((g,i)=>({nip:g.nip,name:g.name,mapel:g.mapel||'',photo:'',aktif:true,password:SANDI_AWAL,face:[],urut:i+1}));
+const nextUrut = () => teachers.reduce((a,t)=>Math.max(a,t.urut||0),0)+1;
+const sortTeachers = () => teachers.sort((a,b)=>(a.urut||999)-(b.urut||999) || a.name.localeCompare(b.name));
+const activeTeachers = () => teachers.filter(t=>t.aktif!==false);
+const attKey = (nip,ds) => `${nip}_${ds}`;
+const getRec = (nip,ds) => att.find(a=>a.nip===nip && a.date===ds);
+
+/* ---------- Kalender kerja ---------- */
+function isWorkday(ds){
+  return settings.workDays.includes(dowOf(ds)) && !settings.holidays.some(h=>h.date===ds);
+}
+/* Hari kerja efektif = hari kerja pada bulan itu yang sudah lewat
+   (hari ini dihitung setelah jam pulang). Dipakai untuk Alpa & persentase. */
+function effectiveWorkdays(y,m){
+  const today=todayStr(), n=daysIn(y,m); let c=0;
+  for(let d=1; d<=n; d++){
+    const ds=ymdOf(y,m,d);
+    if(ds>today) break;
+    if(ds===today && toSec(nowHMS()) < toSec(settings.outTime)) break;
+    if(isWorkday(ds)) c++;
+  }
+  return c;
+}
+function recapData(y,m){
+  const days=effectiveWorkdays(y,m), pre=ymOf(y,m);
+  return {days, rows: activeTeachers().map((t,i)=>{
+    const rs=att.filter(a=>a.nip===t.nip && a.date.startsWith(pre));
+    const c=s=>rs.filter(r=>r.status===s).length;
+    const h=c('Hadir'), te=c('Terlambat'), iz=c('Izin'), sk=c('Sakit'), cu=c('Cuti');
+    const alpa=Math.max(0, days-(h+te+iz+sk+cu));
+    const pct= days ? Math.min(100,(h+te)/days*100) : 0;
+    return {no:i+1,name:t.name,nip:t.nip,h,te,iz,sk,cu,alpa,pct};
+  })};
+}
+
+/* Data contoh absensi (khusus Mode Demo): hari kerja bulan berjalan sampai kemarin */
+function seedAttendance(){
+  const out=[], w=W(), today=todayStr();
+  for(let d=1; d<w.d; d++){
+    const ds=ymdOf(w.y,w.m,d); if(ds>=today || !isWorkday(ds)) continue;
+    teachers.forEach(t=>{
+      const r=Math.random();
+      if(r>0.97) return; // alpa
+      let status='Hadir'; if(r<0.10) status='Terlambat'; else if(r<0.14) status='Izin'; else if(r<0.18) status='Sakit'; else if(r<0.20) status='Cuti';
+      const rec={id:attKey(t.nip,ds),nip:t.nip,date:ds,status,note:'(data contoh)'};
+      if(status==='Hadir'||status==='Terlambat'){
+        const mm = status==='Hadir' ? 25+Math.floor(Math.random()*45) : 76+Math.floor(Math.random()*40);
+        const tm=`${pad(6+Math.floor(mm/60))}:${pad(mm%60)}:${pad(Math.floor(Math.random()*60))}`;
+        const base={lat:settings.lat+(Math.random()-.5)*0.0004,lng:settings.lng+(Math.random()-.5)*0.0004,dist:Math.round(Math.random()*60),inside:true,address:'',selfie:'',face:null};
+        rec.in={...base,time:tm};
+        rec.out={...base,time:`${pad(14+Math.floor(Math.random()*2))}:${pad(Math.floor(Math.random()*60))}:00`};
+      }
+      out.push(rec);
+    });
+  }
+  return out;
+}
+
+/* =====================================================================
+   LAPISAN DATA (Store) – satu antarmuka untuk Mode Demo dan Mode Cloud
+   ===================================================================== */
+
+/* ----- konversi dokumen Firestore <-> objek aplikasi ----- */
+const flat   = descs => (descs||[]).reduce((a,d)=>a.concat(Array.from(d)),[]);
+const unflat = d => { const out=[]; d=d||[]; for(let i=0;i+128<=d.length;i+=128) out.push(d.slice(i,i+128)); return out; };
+function stripUndef(o){
+  if(Array.isArray(o)) return o.map(stripUndef);
+  if(o && typeof o==='object' && Object.getPrototypeOf(o)===Object.prototype){
+    const r={}; Object.keys(o).forEach(k=>{ if(o[k]!==undefined) r[k]=stripUndef(o[k]); }); return r;
+  }
+  return o;
+}
+const posToDoc = p => ({jam:p.time||'',lat:+p.lat||0,lng:+p.lng||0,jarak:+p.dist||0,dalamRadius:!!p.inside,alamat:p.address||'',foto:p.selfie||'',
+                        faceMatch:p.face?+p.face.match:null,faceBaru:p.face?!!p.face.enrolled:false});
+const posFromDoc = (m,jam) => ({time:m.jam||jam||'',lat:m.lat,lng:m.lng,dist:m.jarak,inside:!!m.dalamRadius,address:m.alamat||'',selfie:m.foto||'',
+                        face:(m.faceMatch!==null && m.faceMatch!==undefined)?{match:m.faceMatch,enrolled:!!m.faceBaru}:null});
+function attToDoc(rec,byTeacher){
+  const d={nip:rec.nip,tanggal:rec.date,bulan:rec.date.slice(0,7),status:rec.status,catatan:rec.note||''};
+  if(rec.in){ d.jamMasuk=rec.in.time; d.masuk=posToDoc(rec.in); }
+  if(rec.out) d.keluar=posToDoc(rec.out);
+  d.dibuatOleh = byTeacher ? rec.nip : 'admin';
+  if(byTeacher) d.waktuMasuk=firebase.firestore.FieldValue.serverTimestamp();
+  return stripUndef(d);
+}
+function attFromDoc(id,d){
+  const rec={id,nip:d.nip,date:d.tanggal,status:d.status,note:d.catatan||''};
+  if(d.masuk) rec.in=posFromDoc(d.masuk,d.jamMasuk);
+  if(d.keluar) rec.out=posFromDoc(d.keluar);
+  return rec;
+}
+const teacherFromDoc = (id,d,pw,face) => ({nip:id,name:d.nama||id,mapel:d.mapel||'',photo:d.foto||'',aktif:d.aktif!==false,password:pw||'',face:face||[],urut:d.urut||0});
+
+/* ----- daftar guru awal (dipakai kedua mode) ----- */
+async function seedInitialImpl(store,cb){
+  let ok=0,fail=0,skip=0; const errs=[];
+  for(let i=0;i<DATA_GURU_AWAL.length;i++){
+    const g=DATA_GURU_AWAL[i];
+    if(teachers.some(t=>t.nip===g.nip)){ skip++; continue; }
+    if(cb) cb(i+1,DATA_GURU_AWAL.length,g.name);
+    try{ await store.addTeacher({nip:g.nip,name:g.name,mapel:g.mapel,photo:'',urut:i+1},SANDI_AWAL); ok++; }
+    catch(e){ fail++; errs.push(`${g.name}: ${fbMsg(e)}`); }
+  }
+  return {ok,fail,skip,errs};
+}
+
+/* =====================================================================
+   MODE DEMO – semua data di localStorage perangkat ini
+   ===================================================================== */
+const DemoStore = {
+  mode:'demo',
+  _saveT(){ return LS.set('tp2_teachers',teachers); },
+  _saveA(){ return LS.set('tp2_att',att); },
+  async init(){
+    settings=Object.assign({},DEFAULT_SETTINGS,LS.get('tp2_settings',{}));
+    teachers=LS.get('tp2_teachers',null); att=LS.get('tp2_att',null); logs=LS.get('tp2_logs',[]);
+    if(!Array.isArray(teachers)){ teachers=seedTeachers(); this._saveT(); }
+    if(!Array.isArray(att)){ att=seedAttendance(); this._saveA(); }
+    const s=LS.get('tp2_session',null);
+    if(s && s.role==='admin') return s;
+    if(s && s.role==='guru' && teachers.some(t=>t.nip===s.nip && t.aktif!==false)) return s;
+    return null;
+  },
+  async metaExists(){ return true; },
+  async publicSettings(){},
+  async login(role,user,pass){
+    let sess;
+    if(role==='admin'){
+      if(user.trim()!==settings.adminUser || pass!==settings.adminPass) throw appErr('Username atau kata sandi admin salah.');
+      sess={role:'admin',name:'Administrator',username:settings.adminUser};
+    } else {
+      const nip=user.replace(/\D/g,''); const t=teachers.find(x=>x.nip===nip);
+      if(!t || t.password!==pass) throw appErr('NIP atau kata sandi salah.');
+      if(t.aktif===false) throw appErr('Akun ini dinonaktifkan. Hubungi admin.');
+      sess={role:'guru',nip,name:t.name};
+    }
+    LS.set('tp2_session',sess); return sess;
+  },
+  async setup(){ throw appErr('Setup Awal hanya untuk Mode Cloud.'); },
+  async logout(){ LS.del('tp2_session'); },
+  async loadBase(){},
+  async syncClock(){ clockOffset=0; },
+  async loadMonth(){},
+  async loadAllAtt(){},
+  async loadLogs(){},
+  async saveSettings(){ if(!LS.set('tp2_settings',settings)) throw appErr('Gagal menyimpan pengaturan.'); },
+  async addTeacher(t,pw){
+    if(teachers.some(x=>x.nip===t.nip)) throw appErr('NIP sudah terdaftar.');
+    teachers.push({nip:t.nip,name:t.name,mapel:t.mapel||'',photo:t.photo||'',aktif:true,password:pw,face:[],urut:t.urut||nextUrut()});
+    sortTeachers(); this._saveT();
+  },
+  async updateTeacher(t){ const x=teachers.find(z=>z.nip===t.nip); if(!x) throw appErr('Guru tidak ditemukan.'); x.name=t.name; x.mapel=t.mapel||''; x.photo=t.photo||''; this._saveT(); },
+  async setActive(nip,v){ const x=teachers.find(z=>z.nip===nip); if(x){ x.aktif=!!v; this._saveT(); } },
+  async setPassword(nip,pw){ const x=teachers.find(z=>z.nip===nip); if(!x) throw appErr('Guru tidak ditemukan.'); x.password=pw; this._saveT(); },
+  async saveFace(nip,descs){ const x=teachers.find(z=>z.nip===nip); if(!x) throw appErr('Guru tidak ditemukan.'); x.face=descs.map(d=>Array.from(d)); this._saveT(); },
+  async clearFace(nip){ const x=teachers.find(z=>z.nip===nip); if(x){ x.face=[]; this._saveT(); } },
+  async createAtt(rec){
+    if(att.some(a=>a.id===rec.id)) throw codeErr('already-exists','Anda sudah tercatat hari ini.');
+    att.push(rec); if(!this._saveA()){ att.pop(); throw appErr('Penyimpanan perangkat penuh.'); }
+  },
+  async checkoutAtt(rec,out){ rec.out=out; this._saveA(); },
+  async adminSetAtt(rec){ const i=att.findIndex(a=>a.id===rec.id); if(i>=0) att[i]=rec; else att.push(rec); this._saveA(); },
+  async adminDelAtt(rec){ att=att.filter(a=>a.id!==rec.id); this._saveA(); },
+  async wipeAtt(){ att=[]; this._saveA(); },
+  async log(actor,action,detail){
+    logs.unshift({t:new Date().toISOString(),actor,action,detail:detail||''}); if(logs.length>500) logs.length=500; LS.set('tp2_logs',logs);
+  },
+  async listAdmins(){ return [{id:'demo',username:settings.adminUser,name:'Administrator'}]; },
+  async addAdmin(){ throw appErr('Admin tambahan hanya tersedia di Mode Cloud.'); },
+  async delAdmin(){ throw appErr('Hanya tersedia di Mode Cloud.'); },
+  async changeMyPassword(oldPw,newPw){
+    if(oldPw!==settings.adminPass) throw appErr('Kata sandi lama salah.');
+    settings.adminPass=newPw; await this.saveSettings();
+  },
+  async seedInitial(cb){ return seedInitialImpl(this,cb); },
+  async backupData(){ return {versi:2,mode:'demo',settings,teachers,att,logs}; },
+  async restoreData(d){
+    if(!d || !Array.isArray(d.teachers) || !Array.isArray(d.att)) throw appErr('File cadangan tidak valid.');
+    settings=Object.assign({},DEFAULT_SETTINGS,d.settings||{}); teachers=d.teachers; att=d.att; logs=d.logs||[];
+    LS.set('tp2_settings',settings); this._saveT(); this._saveA(); LS.set('tp2_logs',logs);
+  },
+  async resetDemo(){
+    teachers=seedTeachers(); att=seedAttendance(); logs=[];
+    this._saveT(); this._saveA(); LS.set('tp2_logs',logs);
+  }
+};
+
+/* =====================================================================
+   MODE CLOUD – Firebase Authentication + Cloud Firestore
+   Model data: lihat firestore.rules dan PANDUAN-SETUP.md
+   ===================================================================== */
+let fbAuth=null, fbDb=null, secAuth=null;
+const emailOf = (role,id) => role==='admin'
+  ? `admin-${String(id).toLowerCase().replace(/[^a-z0-9._-]/g,'')}@${EMAIL_DOMAIN}`
+  : `${id}@${EMAIL_DOMAIN}`;
+const FV = () => firebase.firestore.FieldValue;
+
+/* Pastikan akun Auth guru ada dengan kata sandi tertentu (memakai instance Firebase kedua,
+   supaya sesi admin tidak berganti). */
+async function ensureAuth(nip,newPw){
+  const email=emailOf('guru',nip);
+  try{
+    await secAuth.createUserWithEmailAndPassword(email,newPw);
+    await secAuth.signOut();
+    return 'dibuat';
+  }catch(e){
+    try{ await secAuth.signOut(); }catch(_){}
+    if(e.code!=='auth/email-already-in-use') throw e;
+  }
+  /* akun sudah ada → masuk dengan sandi tersimpan (atau sandi baru) lalu ganti sandinya */
+  let oldPw='';
+  try{ const s=await fbDb.collection('teacherSecrets').doc(nip).get(); if(s.exists) oldPw=s.data().pw||''; }catch(e){}
+  const tries=[oldPw,newPw].filter((p,i,a)=>p && a.indexOf(p)===i);
+  for(const p of tries){
+    try{
+      const c=await secAuth.signInWithEmailAndPassword(email,p);
+      if(p!==newPw) await c.user.updatePassword(newPw);
+      await secAuth.signOut();
+      return 'diperbarui';
+    }catch(e){ try{ await secAuth.signOut(); }catch(_){} }
+  }
+  throw codeErr('app/akun-terkunci');
+}
+
+const CloudStore = {
+  mode:'cloud',
+
+  async init(){
+    if(!window.firebase) throw appErr('Library Firebase belum termuat. Periksa koneksi internet lalu muat ulang halaman.');
+    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    fbAuth=firebase.auth(); fbDb=firebase.firestore();
+    let sec; try{ sec=firebase.app('Secondary'); }catch(e){ sec=firebase.initializeApp(FIREBASE_CONFIG,'Secondary'); }
+    secAuth=sec.auth();
+    try{ await secAuth.setPersistence(firebase.auth.Auth.Persistence.NONE); }catch(e){}
+    const user=await new Promise(res=>{ const un=fbAuth.onAuthStateChanged(u=>{ un(); res(u); },()=>res(null)); });
+    if(!user) return null;
+    try{ return await this._session(user); }
+    catch(e){ try{ await fbAuth.signOut(); }catch(_){} return null; }
+  },
+
+  async _session(user){
+    const local=(user.email||'').split('@')[0];
+    if(local.startsWith('admin-')){
+      const a=await fbDb.collection('admins').doc(user.uid).get();
+      if(!a.exists) throw appErr('Akun ini bukan admin.');
+      const d=a.data();
+      return {role:'admin',uid:user.uid,username:d.username||local.slice(6),name:d.nama||'Administrator'};
+    }
+    const t=await fbDb.collection('teachers').doc(local).get();
+    if(!t.exists) throw appErr('Data guru tidak ditemukan. Hubungi admin.');
+    if(t.data().aktif===false) throw appErr('Akun ini dinonaktifkan. Hubungi admin.');
+    return {role:'guru',uid:user.uid,nip:local,name:t.data().nama||local};
+  },
+
+  async metaExists(){ const d=await fbDb.collection('meta').doc('app').get(); return d.exists; },
+
+  async publicSettings(){
+    try{ const d=await fbDb.collection('settings').doc('main').get(); if(d.exists) settings=Object.assign({},DEFAULT_SETTINGS,d.data()); }catch(e){}
+  },
+
+  async login(role,user,pass){
+    let id=user.trim();
+    if(role==='guru'){ id=id.replace(/\D/g,''); if(!id) throw appErr('NIP tidak valid.'); }
+    else if(!id) throw appErr('Username admin wajib diisi.');
+    const cred=await fbAuth.signInWithEmailAndPassword(emailOf(role,id),pass);
+    try{ return await this._session(cred.user); }
+    catch(e){ try{ await fbAuth.signOut(); }catch(_){} throw e; }
+  },
+
+  /* Setup Awal: membuat admin pertama (hanya jika meta/app belum ada) */
+  async setup(username,nama,pass){
+    const u=username.trim().toLowerCase().replace(/[^a-z0-9._-]/g,'');
+    if(!u) throw appErr('Username hanya boleh huruf, angka, titik, strip, atau garis bawah.');
+    const email=emailOf('admin',u);
+    let cred;
+    try{ cred=await fbAuth.createUserWithEmailAndPassword(email,pass); }
+    catch(e){
+      if(e.code==='auth/email-already-in-use'){ cred=await fbAuth.signInWithEmailAndPassword(email,pass); }   // percobaan setup sebelumnya terhenti
+      else throw e;
+    }
+    try{
+      const b=fbDb.batch();
+      b.set(fbDb.collection('meta').doc('app'),{initialized:true,createdAt:FV().serverTimestamp()});
+      b.set(fbDb.collection('admins').doc(cred.user.uid),{username:u,nama:nama||'Administrator'});
+      await b.commit();
+    }catch(e){
+      try{ await fbAuth.signOut(); }catch(_){}
+      if(e.code==='permission-denied') throw appErr('Setup Awal sudah pernah dilakukan atau firestore.rules belum dipublikasikan.');
+      throw e;
+    }
+    const sess={role:'admin',uid:cred.user.uid,username:u,name:nama||'Administrator'};
+    const s=Object.assign({},DEFAULT_SETTINGS); delete s.adminUser; delete s.adminPass;
+    try{ await fbDb.collection('settings').doc('main').set(stripUndef(s)); }catch(e){}
+    return sess;
+  },
+
+  async logout(){ try{ await fbAuth.signOut(); }catch(e){} },
+
+  async syncClock(uid){
+    try{
+      uid=uid||(fbAuth.currentUser&&fbAuth.currentUser.uid); if(!uid) return;
+      const ref=fbDb.collection('clock').doc(uid), t0=Date.now();
+      await ref.set({t:FV().serverTimestamp()});
+      const s=await ref.get({source:'server'}); const t1=Date.now();
+      const srv=s.data().t.toMillis();
+      clockOffset=srv-(t0+t1)/2;
+    }catch(e){ /* jam perangkat dipakai bila gagal */ }
+  },
+
+  async loadBase(sess){
+    const sd=await fbDb.collection('settings').doc('main').get();
+    settings=Object.assign({},DEFAULT_SETTINGS,sd.exists?sd.data():{});
+    await this.syncClock(sess.uid);
+    att=[];
+    if(sess.role==='admin'){
+      const [ts,ss,fs]=await Promise.all([
+        fbDb.collection('teachers').get(), fbDb.collection('teacherSecrets').get(), fbDb.collection('faces').get()]);
+      const sec={}, fc={};
+      ss.forEach(d=>{ sec[d.id]=d.data().pw||''; });
+      fs.forEach(d=>{ fc[d.id]=unflat(d.data().d); });
+      teachers=[]; ts.forEach(d=>teachers.push(teacherFromDoc(d.id,d.data(),sec[d.id],fc[d.id]))); sortTeachers();
+    } else {
+      const d=await fbDb.collection('teachers').doc(sess.nip).get();
+      if(!d.exists) throw appErr('Data guru tidak ditemukan.');
+      const f=await fbDb.collection('faces').doc(sess.nip).get();
+      teachers=[teacherFromDoc(d.id,d.data(),'',f.exists?unflat(f.data().d):[])];
+    }
+  },
+
+  /* Muat absensi satu bulan ('YYYY-MM'); nip=null → semua guru (admin) */
+  async loadMonth(ym,nip){
+    let q=fbDb.collection('attendance');
+    if(nip) q=q.where('nip','==',nip);
+    q=q.where('bulan','==',ym);
+    const snap=await q.get();
+    att=att.filter(a=>!(a.date.startsWith(ym) && (!nip || a.nip===nip)));
+    snap.forEach(d=>att.push(attFromDoc(d.id,d.data())));
+  },
+  async loadAllAtt(){
+    const snap=await fbDb.collection('attendance').get(); att=[];
+    snap.forEach(d=>att.push(attFromDoc(d.id,d.data())));
+  },
+  async loadLogs(){
+    const snap=await fbDb.collection('logs').orderBy('waktu','desc').limit(300).get();
+    logs=[]; snap.forEach(d=>{ const x=d.data(); logs.push({t:x.waktu&&x.waktu.toDate?x.waktu.toDate().toISOString():'',actor:x.pelaku||'',action:x.aksi||'',detail:x.detail||''}); });
+  },
+
+  async saveSettings(){
+    const s=Object.assign({},settings); delete s.adminUser; delete s.adminPass;
+    if(s.logo && s.logo.length>150000) throw appErr('Logo terlalu besar. Pilih gambar yang lebih kecil.');
+    await fbDb.collection('settings').doc('main').set(stripUndef(s));
+  },
+
+  async addTeacher(t,pw){
+    if(teachers.some(x=>x.nip===t.nip)) throw appErr('NIP sudah terdaftar.');
+    await ensureAuth(t.nip,pw);
+    const urut=t.urut||nextUrut();
+    await fbDb.collection('teachers').doc(t.nip).set({nip:t.nip,nama:t.name,mapel:t.mapel||'',foto:t.photo||'',aktif:true,urut});
+    await fbDb.collection('teacherSecrets').doc(t.nip).set({pw});
+    teachers.push({nip:t.nip,name:t.name,mapel:t.mapel||'',photo:t.photo||'',aktif:true,password:pw,face:[],urut}); sortTeachers();
+  },
+  async updateTeacher(t){
+    await fbDb.collection('teachers').doc(t.nip).set({nama:t.name,mapel:t.mapel||'',foto:t.photo||''},{merge:true});
+    const x=teachers.find(z=>z.nip===t.nip); if(x){ x.name=t.name; x.mapel=t.mapel||''; x.photo=t.photo||''; }
+  },
+  async setActive(nip,v){
+    await fbDb.collection('teachers').doc(nip).update({aktif:!!v});
+    const x=teachers.find(z=>z.nip===nip); if(x) x.aktif=!!v;
+  },
+  async setPassword(nip,pw){
+    await ensureAuth(nip,pw);
+    await fbDb.collection('teacherSecrets').doc(nip).set({pw});
+    const x=teachers.find(z=>z.nip===nip); if(x) x.password=pw;
+  },
+  async saveFace(nip,descs){
+    const d=flat(descs);
+    if(d.length!==384) throw appErr('Data wajah tidak lengkap. Ulangi pendaftaran.');
+    await fbDb.collection('faces').doc(nip).set({d,diperbarui:FV().serverTimestamp()});
+    const x=teachers.find(z=>z.nip===nip); if(x) x.face=unflat(d);
+  },
+  async clearFace(nip){
+    await fbDb.collection('faces').doc(nip).delete();
+    const x=teachers.find(z=>z.nip===nip); if(x) x.face=[];
+  },
+
+  async createAtt(rec){
+    await fbDb.collection('attendance').doc(rec.id).set(attToDoc(rec,true));
+    att.push(rec);
+  },
+  async checkoutAtt(rec,out){
+    await fbDb.collection('attendance').doc(rec.id).update({keluar:stripUndef(posToDoc(out)),waktuKeluar:FV().serverTimestamp()});
+    rec.out=out;
+  },
+  async adminSetAtt(rec){
+    await fbDb.collection('attendance').doc(rec.id).set(attToDoc(rec,false));
+    const i=att.findIndex(a=>a.id===rec.id); if(i>=0) att[i]=rec; else att.push(rec);
+  },
+  async adminDelAtt(rec){
+    await fbDb.collection('attendance').doc(rec.id).delete();
+    att=att.filter(a=>a.id!==rec.id);
+  },
+  async wipeAtt(){
+    const snap=await fbDb.collection('attendance').get(); const docs=[]; snap.forEach(d=>docs.push(d.ref));
+    for(let i=0;i<docs.length;i+=15){
+      const b=fbDb.batch(); docs.slice(i,i+15).forEach(r=>b.delete(r)); await b.commit();
+    }
+    att=[];
+  },
+  async log(actor,action,detail){
+    try{ await fbDb.collection('logs').add({waktu:FV().serverTimestamp(),pelaku:String(actor||''),aksi:String(action||''),detail:String(detail||'')}); }catch(e){}
+  },
+
+  async listAdmins(){
+    const snap=await fbDb.collection('admins').get(); const out=[];
+    snap.forEach(d=>out.push({id:d.id,username:d.data().username||'',name:d.data().nama||''}));
+    return out.sort((a,b)=>a.username.localeCompare(b.username));
+  },
+  async addAdmin(username,nama,pass){
+    const u=username.trim().toLowerCase().replace(/[^a-z0-9._-]/g,'');
+    if(!u) throw appErr('Username hanya boleh huruf, angka, titik, strip, atau garis bawah.');
+    let cred;
+    try{ cred=await secAuth.createUserWithEmailAndPassword(emailOf('admin',u),pass); }
+    finally{ try{ await secAuth.signOut(); }catch(_){} }
+    await fbDb.collection('admins').doc(cred.user.uid).set({username:u,nama:nama||u});
+  },
+  async delAdmin(id){
+    const list=await this.listAdmins();
+    if(list.length<=1) throw appErr('Tidak bisa menghapus admin terakhir.');
+    if(S.user && id===S.user.uid) throw appErr('Anda tidak bisa menghapus akun Anda sendiri.');
+    await fbDb.collection('admins').doc(id).delete();
+  },
+  async changeMyPassword(oldPw,newPw){
+    const u=fbAuth.currentUser; if(!u) throw appErr('Sesi berakhir. Masuk kembali.');
+    try{
+      await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email,oldPw));
+    }catch(e){
+      if(e.code==='auth/invalid-credential'||e.code==='auth/wrong-password') throw appErr('Kata sandi lama salah.');
+      throw e;
+    }
+    await u.updatePassword(newPw);
+  },
+
+  async seedInitial(cb){ return seedInitialImpl(this,cb); },
+  async backupData(){
+    await this.loadAllAtt(); await this.loadLogs();
+    const s=Object.assign({},settings); delete s.adminUser; delete s.adminPass;
+    return {versi:2,mode:'cloud',settings:s,teachers,att,logs};
+  },
+  async restoreData(){ throw appErr('Pemulihan dari berkas tidak tersedia di Mode Cloud (data sudah tersimpan di Firebase).'); },
+  async resetDemo(){ throw appErr('Hanya tersedia di Mode Demo.'); }
+};
+
+const Store = CLOUD ? CloudStore : DemoStore;
+
+/* =====================================================================
+   STATE, ROUTER, HEADER
+   ===================================================================== */
+const S = { user:null, view:'', month:0, year:0, loginRole:'guru', needSetup:null, metaErr:'' };
+let timers=[], mapObj=null, chartObjs=[], watchId=null, renderSeq=0;
+let geo={ok:false,lat:0,lng:0,acc:0,err:'',addr:'',dist:0};
+
+function clearRuntime(){
+  timers.forEach(clearInterval); timers=[];
+  if(mapObj){ try{ mapObj.remove(); }catch(e){} mapObj=null; }
+  chartObjs.forEach(c=>{ try{ c.destroy(); }catch(e){} }); chartObjs=[];
+  if(watchId!==null){ try{ navigator.geolocation.clearWatch(watchId); }catch(e){} watchId=null; }
+}
+
+function applyBranding(){
+  const logo=settings.logo||DEFAULT_LOGO;
+  $('#hLogo').src=logo;
+  const fav=$('#favicon'); if(fav) fav.href=logo;
+  $('#hName').textContent=String(settings.schoolName||'').toUpperCase();
+  $('#hSub').textContent=`${settings.instansi} • Aplikasi Absensi Kehadiran Guru`;
+  $('#fName').textContent=settings.headName;
+  $('#fNip').textContent=settings.headNip;
+  $('#fCopy').textContent=`© ${W().y} ${settings.schoolName} – Sistem Absensi Kehadiran Guru`;
+  document.title=`Absensi Guru – ${settings.schoolName}`;
+  $('#demoBanner').style.display = CLOUD ? 'none' : 'block';
+}
+
+function renderHeader(){
+  const u=S.user;
+  if(!u){ $('#hUser').innerHTML=''; $('#hNav').style.display='none'; return; }
+  $('#hUser').innerHTML=`<div class="userchip"><div><b>${esc(u.name)}</b><small>${u.role==='admin'?'Admin':'NIP '+esc(fmtNip(u.nip))}</small></div>
+    <button class="btn sm" onclick="App.logout()"><i class="fa-solid fa-right-from-bracket"></i> Keluar</button></div>`;
+  if(u.role==='admin'){
+    const items=[['adminHome','fa-gauge','Dashboard'],['adminTeachers','fa-users','Data Guru'],['adminRecap','fa-chart-column','Rekap Bulanan'],['adminLogs','fa-clock-rotate-left','Log Aktivitas'],['adminSettings','fa-gear','Pengaturan']];
+    $('#hNavIn').innerHTML=items.map(([v,i,l])=>`<button class="${S.view===v?'on':''}" onclick="App.go('${v}')"><i class="fa-solid ${i}"></i> ${l}</button>`).join('');
+    $('#hNav').style.display='block';
+  } else $('#hNav').style.display='none';
+}
+
+const App={
+  go(v){ S.view=v; render(); window.scrollTo({top:0}); },
+  async logout(){
+    if(S.user) await Store.log(S.user.role==='admin'?'Admin':S.user.nip,'Logout','');
+    await Store.logout();
+    S.user=null; S.view='login'; teachers=[]; att=[]; logs=[];
+    if(CLOUD){ settings=Object.assign({},DEFAULT_SETTINGS); await Store.publicSettings(); }
+    else { await Store.init(); }   // mode demo: muat ulang data lokal agar bisa login lagi
+    render();
+  }
+};
+window.App=App;
+
+function loadingHtml(msg='Memuat…'){ return `<div class="card center" style="padding:40px"><i class="fa-solid fa-spinner fa-spin"></i> ${esc(msg)}</div>`; }
+function showError(e,retry=true){
+  $('#app').innerHTML=`<div class="card center" style="padding:30px;max-width:520px;margin:30px auto">
+    <div class="alert bad" style="justify-content:center"><i class="fa-solid fa-circle-exclamation"></i><div>${esc(fbMsg(e))}</div></div>
+    ${retry?'<button class="btn primary" style="margin-top:14px" onclick="render()"><i class="fa-solid fa-rotate"></i> Coba lagi</button>':''}</div>`;
+}
+
+async function render(){
+  const tok=++renderSeq;
+  clearRuntime(); closeModal(); applyBranding();
+  if(!S.user) S.view='login';
+  else if(!S.view || S.view==='login') S.view = S.user.role==='admin' ? 'adminHome' : 'guruDash';
+  renderHeader();
+  const V={login:vLogin,guruDash:vGuru,adminHome:vAdminHome,adminTeachers:vTeachers,adminRecap:vRecap,adminLogs:vLogs,adminSettings:vSettings};
+  const f=V[S.view]||vLogin;
+  $('#app').innerHTML=loadingHtml();
+  try{ await f(tok); }
+  catch(e){ if(tok===renderSeq){ console.warn(e); showError(e); } }
+}
+window.render=render;
+
+/* =====================================================================
+   1. LOGIN  &  SETUP AWAL
+   ===================================================================== */
+async function vLogin(tok=renderSeq){
+  if(CLOUD && S.needSetup===null){
+    try{ S.needSetup=!(await Store.metaExists()); S.metaErr=''; }
+    catch(e){ S.needSetup=false; S.metaErr=fbMsg(e); }
+    if(tok!==renderSeq) return;
+  }
+  if(CLOUD && S.needSetup) return vSetup(tok);
+  const g=S.loginRole==='guru';
+  const demoInfo = !CLOUD && (settings.adminPass==='admin123' || (teachers[0] && teachers[0].password===SANDI_AWAL))
+    ? `<div class="alert info"><i class="fa-solid fa-circle-info"></i><div><b>Akun demo</b> (hilang setelah sandi diganti)<br>
+        ${settings.adminPass==='admin123'?`Admin: <code>${esc(settings.adminUser)}</code> / <code>admin123</code><br>`:''}
+        ${teachers[0] && teachers[0].password===SANDI_AWAL?`Guru: NIP <code>${esc(teachers[0].nip)}</code> / <code>${SANDI_AWAL}</code><br>`:''}
+        <span class="muted">Admin mengatur kata sandi guru di menu Data Guru.</span></div></div>` : '';
+  $('#app').innerHTML=`
+  <div class="login-wrap"><div class="card">
+    <h2 style="font-size:19px;justify-content:center"><i class="fa-solid fa-user-lock"></i> Masuk ke Aplikasi</h2>
+    <div class="tabs">
+      <button type="button" class="${g?'on':''}" onclick="S.loginRole='guru';vLogin()"><i class="fa-solid fa-chalkboard-user"></i> Guru</button>
+      <button type="button" class="${!g?'on':''}" onclick="S.loginRole='admin';vLogin()"><i class="fa-solid fa-user-shield"></i> Admin</button>
+    </div>
+    ${S.metaErr?`<div class="alert warn"><i class="fa-solid fa-triangle-exclamation"></i><div>${esc(S.metaErr)}</div></div>`:''}
+    <form id="fLogin" autocomplete="off">
+      <label>${g?'NIP':'Username Admin'}</label>
+      <input type="text" id="lUser" ${g?'inputmode="numeric" placeholder="Masukkan NIP"':'placeholder="Username"'} autocapitalize="none" autocorrect="off" required>
+      <label>Kata Sandi</label>
+      <div class="pwrow"><input type="password" id="lPass" placeholder="Kata sandi" required><button type="button" id="lEye" aria-label="Tampilkan sandi"><i class="fa-solid fa-eye"></i></button></div>
+      <button class="btn primary big" style="margin-top:16px"><i class="fa-solid fa-right-to-bracket"></i> Masuk</button>
+    </form>
+    ${demoInfo}
+    <p class="muted center" style="margin-top:12px">Lupa kata sandi? Hubungi admin sekolah.</p>
+  </div></div>`;
+  $('#lEye').onclick=()=>{ const i=$('#lPass'); i.type=i.type==='password'?'text':'password'; };
+  $('#fLogin').addEventListener('submit',e=>{
+    e.preventDefault();
+    locked(async()=>{
+      const u=$('#lUser').value.trim(), p=$('#lPass').value;
+      if(!u||!p) return toast('Isi NIP/username dan kata sandi.','error');
+      try{
+        const sess=await Store.login(S.loginRole,u,p);
+        S.user=sess; await Store.loadBase(sess);
+        const w=W(); S.month=w.m; S.year=w.y; S.view='';
+        Store.log(sess.role==='admin'?'Admin':sess.nip,'Login','');
+        toast('Selamat datang!','success'); render();
+      }catch(err){
+        if(S.user){ await Store.logout(); S.user=null; }
+        toast(fbMsg(err),'error');
+      }
+    });
+  });
+}
+
+async function vSetup(tok=renderSeq){
+  $('#app').innerHTML=`
+  <div class="login-wrap"><div class="card">
+    <h2 style="font-size:19px;justify-content:center"><i class="fa-solid fa-wand-magic-sparkles"></i> Setup Awal</h2>
+    <div class="alert warn"><i class="fa-solid fa-triangle-exclamation"></i><div>Aplikasi ini belum punya admin. Buat <b>akun admin pertama</b> sekarang. Layar ini hanya muncul sekali dan tidak bisa dipakai lagi setelah admin dibuat.</div></div>
+    <form id="fSetup" autocomplete="off">
+      <label>Nama Admin</label><input type="text" id="sNama" placeholder="mis. Operator Sekolah" required>
+      <label>Username (huruf kecil/angka)</label><input type="text" id="sUser" placeholder="mis. admin" autocapitalize="none" autocorrect="off" required>
+      <label>Kata Sandi (min. ${MIN_PASS} karakter)</label><input type="password" id="sPass" required>
+      <label>Ulangi Kata Sandi</label><input type="password" id="sPass2" required>
+      <button class="btn primary big" style="margin-top:16px"><i class="fa-solid fa-check"></i> Buat Admin &amp; Mulai</button>
+    </form>
+  </div></div>`;
+  $('#fSetup').addEventListener('submit',e=>{
+    e.preventDefault();
+    locked(async()=>{
+      const nama=$('#sNama').value.trim(), user=$('#sUser').value.trim(), p=$('#sPass').value, p2=$('#sPass2').value;
+      if(p.length<MIN_PASS) return toast(`Kata sandi minimal ${MIN_PASS} karakter.`,'error');
+      if(p!==p2) return toast('Ulangi kata sandi dengan benar.','error');
+      try{
+        const sess=await Store.setup(user,nama,p);
+        S.user=sess; S.needSetup=false; await Store.loadBase(sess);
+        await Store.log('Admin','Setup awal','Admin pertama dibuat: '+sess.username);
+        S.view='adminTeachers'; toast('Admin dibuat. Selanjutnya muat data guru awal.','success'); render();
+      }catch(err){ toast(fbMsg(err),'error'); }
+    });
+  });
+}
+
+/* =====================================================================
+   2. DASHBOARD GURU – absen + peta + riwayat
+   ===================================================================== */
+const me = () => teachers.find(x=>x.nip===(S.user&&S.user.nip));
+
+async function vGuru(tok=renderSeq){
+  const t=me(); if(!t){ toast('Data guru tidak ditemukan','error'); return App.logout(); }
+  await Store.loadMonth(todayStr().slice(0,7), t.nip);
+  if(tok!==renderSeq) return;
+  const cm=S.month, cy=S.year;
+
+  $('#app').innerHTML=`
+  <div class="grid g2">
+    <div class="card">
+      <h2><i class="fa-solid fa-fingerprint"></i> Absensi Hari Ini</h2>
+      <div class="clock"><div class="t" id="clk">--:--:--</div><div class="d" id="dte"></div></div>
+      <div class="cols">
+        <div><label>Nama Guru</label><input type="text" value="${esc(t.name)}" readonly></div>
+        <div><label>NIP</label><input type="text" value="${esc(fmtNip(t.nip))}" readonly></div>
+      </div>
+      <div class="cols">
+        <div><label>Tanggal</label><input type="text" id="fTgl" readonly></div>
+        <div><label>Status Hari Ini</label><input type="text" id="fStat" readonly></div>
+      </div>
+      ${settings.faceRequired
+        ? `<div class="alert info"><i class="fa-solid fa-face-smile"></i><div>Absen masuk &amp; pulang memakai <b>pemindai wajah</b>${(t.face&&t.face.length)?'':' — wajah Anda belum terdaftar, akan didaftarkan saat absen pertama'}.</div></div>`
+        : `<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-top:12px"><input type="checkbox" id="chkSelfie" style="width:auto"> Ambil foto selfie saat absen (opsional)</label>`}
+      <div class="cols" style="margin-top:12px">
+        <button class="btn green big" id="btnIn" onclick="Guru.check('in')"><i class="fa-solid fa-right-to-bracket"></i> Masuk</button>
+        <button class="btn primary big" id="btnOut" onclick="Guru.check('out')"><i class="fa-solid fa-right-from-bracket"></i> Pulang</button>
+      </div>
+      <button class="btn" style="width:100%;margin-top:10px" onclick="Guru.izin()"><i class="fa-solid fa-envelope-open-text"></i> Ajukan Izin / Sakit / Cuti</button>
+      <div id="todayInfo"></div>
+    </div>
+
+    <div class="card">
+      <h2><i class="fa-solid fa-location-dot"></i> Lokasi Anda</h2>
+      <div id="map"></div>
+      <div class="geo">
+        <div>Latitude<b id="gLat">-</b></div><div>Longitude<b id="gLng">-</b></div>
+        <div>Jarak ke sekolah<b id="gDist">-</b></div><div>Akurasi GPS<b id="gAcc">-</b></div>
+      </div>
+      <div id="geoAlert"></div>
+      <div class="muted" style="margin-top:8px" id="gAddr"></div>
+      ${settings.simulate?`<div class="row" style="margin-top:10px"><button class="btn sm" onclick="Guru.sim(true)">📍 Simulasi: di sekolah</button><button class="btn sm" onclick="Guru.sim(false)">📍 Simulasi: di luar sekolah</button></div>`:''}
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Kehadiran Saya</h2>
+    <div class="row" style="margin-bottom:10px">
+      <select id="hMon" style="width:auto">${BULAN.map((b,i)=>`<option value="${i}" ${i===cm?'selected':''}>${b}</option>`).join('')}</select>
+      <input type="number" id="hYr" value="${cy}" style="width:100px">
+    </div>
+    <div class="tw"><table><thead><tr><th>Tanggal</th><th>Hari</th><th>Status</th><th>Masuk</th><th>Pulang</th><th>Lokasi</th><th>Keterangan</th></tr></thead><tbody id="hist"></tbody></table></div>
+  </div>`;
+
+  const tick=()=>{ const el=$('#clk'); if(!el) return; el.textContent=nowHMS(); const w=W(); $('#dte').textContent=`${HARI[w.dow]}, ${w.d} ${BULAN[w.m]} ${w.y}`; };
+  tick(); timers.push(setInterval(tick,1000));
+  { const w=W(); $('#fTgl').value=`${HARI[w.dow]}, ${w.d} ${BULAN[w.m]} ${w.y}`; }
+
+  Guru.refreshToday();
+  await Guru.history();
+  if(tok!==renderSeq) return;
+  $('#hMon').onchange=()=>{ S.month=+$('#hMon').value; Guru.history(true); };
+  $('#hYr').onchange=()=>{ S.year=+$('#hYr').value||cy; Guru.history(true); };
+  Guru.initMap();
+}
+
+const Guru={
+  marker:null,
+  refreshToday(){
+    const t=me(); if(!t||!$('#fStat')) return; const rec=getRec(t.nip,todayStr());
+    let st='Belum absen';
+    if(rec) st=rec.status+(rec.in&&!rec.in.inside?' (Di Luar Lokasi)':'');
+    $('#fStat').value=st;
+    const leave = rec && !rec.in;
+    $('#btnIn').disabled  = !!rec;
+    $('#btnOut').disabled = !(rec && rec.in && !rec.out);
+    let info='';
+    if(rec?.in) info+=`<div class="alert ok"><i class="fa-solid fa-circle-check"></i><div>Masuk pukul <b>${esc(rec.in.time)}</b> – <span class="badge b-${rec.status}">${rec.status}</span>${rec.in.inside?'':' <span class="badge b-out">Di Luar Lokasi</span>'}</div></div>`;
+    if(rec?.out) info+=`<div class="alert ok"><i class="fa-solid fa-circle-check"></i><div>Pulang pukul <b>${esc(rec.out.time)}</b>${rec.out.inside?'':' <span class="badge b-out">Di Luar Lokasi</span>'}</div></div>`;
+    if(leave) info+=`<div class="alert info"><i class="fa-solid fa-envelope"></i><div>Hari ini tercatat <b>${rec.status}</b>${rec.note?': '+esc(rec.note):''}</div></div>`;
+    if(!isWorkday(todayStr())) info+=`<div class="alert warn"><i class="fa-solid fa-calendar-xmark"></i><div>Hari ini bukan hari kerja (libur / di luar jadwal).</div></div>`;
+    $('#todayInfo').innerHTML=info;
+  },
+  async history(reload){
+    const t=me(); if(!t) return;
+    const ym=ymOf(S.year,S.month);
+    if(reload || ym!==todayStr().slice(0,7)){
+      try{ await Store.loadMonth(ym,t.nip); }catch(e){ toast(fbMsg(e),'error'); }
+    }
+    const el=$('#hist'); if(!el) return;
+    const n=daysIn(S.year,S.month); let html='';
+    for(let d=n; d>=1; d--){
+      const ds=ymdOf(S.year,S.month,d); if(ds>todayStr()) continue;
+      const r=getRec(t.nip,ds); const dow=HARI[dowOf(ds)];
+      if(!r && !isWorkday(ds)) continue;
+      const stat=r?r.status:'Alpa';
+      html+=`<tr><td>${tglIndoStr(ds)}</td><td>${dow}</td><td><span class="badge b-${stat}">${stat}</span></td>
+        <td>${esc(r?.in?.time||'-')}</td><td>${esc(r?.out?.time||'-')}</td>
+        <td>${r?.in?(r.in.inside?'<span class="badge b-in">Di Sekolah</span>':'<span class="badge b-out">Di Luar Lokasi</span>'):'-'}</td>
+        <td>${esc(r?.note||'')}</td></tr>`;
+    }
+    el.innerHTML=html||'<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">Belum ada data pada bulan ini.</td></tr>';
+  },
+  initMap(){
+    if(!window.L){ const m=$('#map'); if(m) m.innerHTML='<div class="muted" style="padding:20px">Peta belum termuat (butuh internet).</div>'; }
+    else{
+      mapObj=L.map('map').setView([settings.lat,settings.lng],17);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(mapObj);
+      L.circle([settings.lat,settings.lng],{radius:settings.radius,color:'#10B981',fillColor:'#10B981',fillOpacity:.15}).addTo(mapObj);
+      L.marker([settings.lat,settings.lng],{title:'Sekolah'}).addTo(mapObj).bindPopup('<b>'+esc(settings.schoolName)+'</b><br>Titik lokasi sekolah');
+    }
+    Guru.marker=null; geo={ok:false,lat:0,lng:0,acc:0,err:'',addr:'',dist:0};
+    if(settings.simulate){ Guru.sim(true); return; }
+    if(!navigator.geolocation){ geo.err='Browser tidak mendukung GPS.'; Guru.paint(); return; }
+    $('#geoAlert').innerHTML='<div class="alert info"><i class="fa-solid fa-satellite-dish"></i><div>Meminta izin lokasi… Mohon pilih <b>Izinkan</b>.</div></div>';
+    watchId=navigator.geolocation.watchPosition(p=>{
+      Guru.setPos(p.coords.latitude,p.coords.longitude,p.coords.accuracy);
+    },err=>{
+      geo.ok=false;
+      geo.err={1:'Izin lokasi ditolak. Aktifkan izin lokasi di pengaturan browser lalu muat ulang halaman.',2:'Posisi tidak tersedia. Pastikan GPS/Wi-Fi aktif.',3:'Waktu permintaan lokasi habis. Coba lagi.'}[err.code]||'Gagal membaca lokasi.';
+      Guru.paint();
+    },{enableHighAccuracy:true,timeout:20000,maximumAge:5000});
+  },
+  sim(inside){
+    const lat=inside?settings.lat+0.0002:settings.lat+0.0030, lng=inside?settings.lng+0.0002:settings.lng+0.0030;
+    Guru.setPos(lat,lng,10);
+  },
+  _addrKey:'',
+  setPos(lat,lng,acc){
+    geo.ok=true; geo.lat=lat; geo.lng=lng; geo.acc=acc; geo.err='';
+    geo.dist=haversine(lat,lng,settings.lat,settings.lng);
+    Guru.paint();
+    if(mapObj && window.L){
+      if(!Guru.marker){
+        Guru.marker=L.circleMarker([lat,lng],{radius:9,color:'#fff',weight:3,fillColor:'#1E3A8A',fillOpacity:1}).addTo(mapObj).bindPopup('Posisi Anda');
+        mapObj.fitBounds(L.latLngBounds([[lat,lng],[settings.lat,settings.lng]]).pad(0.4),{maxZoom:18});
+      } else Guru.marker.setLatLng([lat,lng]);
+    }
+    const key=lat.toFixed(4)+','+lng.toFixed(4);
+    if(settings.reverseGeo && key!==Guru._addrKey){ Guru._addrKey=key; geo.addr=''; Guru.reverse(lat,lng,key); }
+  },
+  async reverse(lat,lng,key){
+    try{
+      const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&accept-language=id`);
+      const j=await r.json(); if(key===Guru._addrKey){ geo.addr=j.display_name||''; const el=$('#gAddr'); if(el) el.textContent=geo.addr?'📍 '+geo.addr:''; }
+    }catch(e){ /* alamat bersifat opsional */ }
+  },
+  paint(){
+    if(!$('#gLat')) return;
+    if(!geo.ok){ $('#geoAlert').innerHTML=`<div class="alert bad"><i class="fa-solid fa-location-crosshairs"></i><div>${esc(geo.err||'Lokasi belum terdeteksi')}</div></div>`; return; }
+    $('#gLat').textContent=geo.lat.toFixed(6); $('#gLng').textContent=geo.lng.toFixed(6);
+    $('#gDist').textContent=Math.round(geo.dist)+' m (maks '+settings.radius+' m)'; $('#gAcc').textContent='± '+Math.round(geo.acc)+' m';
+    const inside=geo.dist<=settings.radius;
+    $('#geoAlert').innerHTML=inside
+      ?'<div class="alert ok"><i class="fa-solid fa-circle-check"></i><div>Anda berada <b>di dalam area sekolah</b>.</div></div>'
+      :'<div class="alert bad"><i class="fa-solid fa-triangle-exclamation"></i><div><b>Anda berada di luar area sekolah.</b> Absensi tetap bisa dicatat, tetapi ditandai “Di Luar Lokasi”.</div></div>';
+  },
+
+  check(type){
+    return locked(async()=>{
+      const t=me(); if(!t) return;
+      if(CLOUD && !navigator.onLine) return toast('Tidak ada koneksi internet. Absensi tidak dapat disimpan.','error');
+      if(!geo.ok) return toast('Lokasi belum terdeteksi. Izinkan akses lokasi terlebih dahulu.','error');
+      try{ await Store.loadMonth(todayStr().slice(0,7),t.nip); }catch(e){ return toast(fbMsg(e),'error'); }
+      const ds=todayStr(); let rec=getRec(t.nip,ds);
+      if(type==='in' && rec){ Guru.refreshToday(); return toast('Anda sudah tercatat absen hari ini.','warn'); }
+      if(type==='out'){
+        if(!rec||!rec.in) return toast('Anda belum absen masuk hari ini.','warn');
+        if(rec.out) return toast('Anda sudah absen pulang hari ini.','warn');
+      }
+      if(!isWorkday(ds) && !confirmBox('Hari ini bukan hari kerja. Tetap lanjutkan absensi?')) return;
+
+      /* Scan wajah (jika diwajibkan) – foto hasil scan disimpan sebagai bukti */
+      let selfie='', face=null;
+      if(settings.faceRequired){ face=await Face.verify(t); if(!face) return; selfie=face.photo; }
+      else if($('#chkSelfie') && $('#chkSelfie').checked) selfie=await takeSelfie();
+
+      await Store.syncClock();
+      const time=nowHMS(), inside=geo.dist<=settings.radius;
+      const pos={time,lat:+geo.lat.toFixed(6),lng:+geo.lng.toFixed(6),dist:Math.round(geo.dist),inside,address:geo.addr||'',selfie,
+                 face: face ? {match:+(face.dist||0).toFixed(3), enrolled:!!face.enrolled} : null};
+      try{
+        if(type==='in'){
+          const late=toSec(time)>toSec(settings.lateTime+':00');
+          rec={id:attKey(t.nip,ds),nip:t.nip,date:ds,status:late?'Terlambat':'Hadir',note:'',in:pos};
+          await Store.createAtt(rec);
+          Store.log(t.nip,'Absen Masuk',`${time} • ${rec.status} • ${inside?'di sekolah':'DI LUAR LOKASI ('+pos.dist+' m)'}`);
+          toast(`Absen masuk berhasil pukul ${time.slice(0,5)} – ${rec.status}`,late?'warn':'success');
+        } else {
+          await Store.checkoutAtt(rec,pos);
+          Store.log(t.nip,'Absen Pulang',`${time} • ${inside?'di sekolah':'DI LUAR LOKASI ('+pos.dist+' m)'}`);
+          toast(`Absen pulang berhasil pukul ${time.slice(0,5)}`,'success');
+        }
+        if(!inside) toast('Anda berada di luar area sekolah – absensi ditandai “Di Luar Lokasi”.','warn');
+      }catch(e){
+        try{ await Store.loadMonth(todayStr().slice(0,7),t.nip); }catch(_){}
+        const again=getRec(t.nip,ds);
+        if(type==='in' && again) toast('Anda sudah tercatat absen hari ini (mungkin dari perangkat lain).','warn');
+        else if(type==='out' && again && again.out) toast('Absen pulang sudah tercatat (mungkin dari perangkat lain).','warn');
+        else toast(fbMsg(e),'error');
+      }
+      Guru.refreshToday(); Guru.history();
+    });
+  },
+
+  izin(){
+    const t=me(); if(!t) return;
+    if(getRec(t.nip,todayStr())) return toast('Anda sudah tercatat absen hari ini.','warn');
+    openModal(`<h3>Ajukan Izin / Sakit / Cuti</h3><p class="muted">Untuk tanggal ${tglIndo()}</p>
+      <label>Jenis</label><select id="iJenis"><option>Izin</option><option>Sakit</option><option>Cuti</option></select>
+      <label>Keterangan</label><textarea id="iNote" rows="3" placeholder="Alasan singkat"></textarea>
+      <div class="row end" style="margin-top:14px"><button class="btn" onclick="closeModal()">Batal</button><button class="btn primary" onclick="Guru.saveIzin()">Simpan</button></div>`);
+  },
+  saveIzin(){
+    return locked(async()=>{
+      const t=me(), ds=todayStr();
+      const st=$('#iJenis').value, note=$('#iNote').value.trim();
+      if(!note) return toast('Keterangan wajib diisi.','error');
+      if(CLOUD && !navigator.onLine) return toast('Tidak ada koneksi internet.','error');
+      try{
+        await Store.createAtt({id:attKey(t.nip,ds),nip:t.nip,date:ds,status:st,note});
+        Store.log(t.nip,'Pengajuan '+st,note); closeModal(); toast(st+' berhasil dicatat.','success');
+      }catch(e){
+        try{ await Store.loadMonth(todayStr().slice(0,7),t.nip); }catch(_){}
+        toast(getRec(t.nip,ds)?'Sudah ada catatan hari ini.':fbMsg(e), getRec(t.nip,ds)?'warn':'error');
+      }
+      Guru.refreshToday(); Guru.history();
+    });
+  }
+};
+window.Guru=Guru;
+
+/* =====================================================================
+   3. DASHBOARD ADMIN
+   ===================================================================== */
+function avatar(t){ return t.photo?`<img class="avatar" src="${esc(t.photo)}" alt="">`:`<span class="avatar">${esc(initials(t.name))}</span>`; }
+window.viewImg=src=>openModal(`<img src="${esc(src)}" style="width:100%;border-radius:10px" alt="Foto"><div class="row end" style="margin-top:10px"><button class="btn" onclick="closeModal()">Tutup</button></div>`);
+
+async function vAdminHome(tok=renderSeq){
+  const ym=todayStr().slice(0,7);
+  await Store.loadMonth(ym,null);
+  if(tok!==renderSeq) return;
+  const w=W();
+  $('#app').innerHTML=`
+  <div class="page-title"><i class="fa-solid fa-gauge"></i> Dashboard Admin <span class="muted" style="font-weight:400">${HARI[w.dow]}, ${w.d} ${BULAN[w.m]} ${w.y}</span>
+    <div class="spacer"></div><button class="btn sm" id="btnRefresh"><i class="fa-solid fa-rotate"></i> Segarkan</button></div>
+  <div id="homeBody"></div>`;
+  const draw=()=>{
+    const el=$('#homeBody'); if(!el) return;
+    const ds=todayStr(), work=isWorkday(ds);
+    const list=activeTeachers();
+    const recs=list.map(t=>({t,r:getRec(t.nip,ds)}));
+    const cnt=s=>recs.filter(x=>x.r&&x.r.status===s).length;
+    const belum=recs.filter(x=>!x.r).length;
+    const stat=(ic,col,n,l)=>`<div class="card stat"><div class="ic" style="background:${col}"><i class="fa-solid ${ic}"></i></div><div><b>${n}</b><span>${l}</span></div></div>`;
+    el.innerHTML=`
+    ${work?'':'<div class="alert warn" style="margin:0 0 14px"><i class="fa-solid fa-calendar-xmark"></i><div>Hari ini bukan hari kerja.</div></div>'}
+    ${list.length===0?'<div class="alert info" style="margin:0 0 14px"><i class="fa-solid fa-circle-info"></i><div>Belum ada data guru. Buka menu <b>Data Guru</b> lalu klik <b>Muat Data Guru Awal</b>.</div></div>':''}
+    <div class="grid g4">
+      ${stat('fa-users','#1E3A8A',list.length,'Total Guru')}
+      ${stat('fa-circle-check','#10B981',cnt('Hadir'),'Hadir')}
+      ${stat('fa-clock','#F59E0B',cnt('Terlambat'),'Terlambat')}
+      ${stat('fa-envelope-open-text','#3B82F6',cnt('Izin')+cnt('Sakit')+cnt('Cuti'),'Izin / Sakit / Cuti')}
+      ${stat('fa-circle-question','#64748B',belum,'Belum Absen')}
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2><i class="fa-solid fa-list-check"></i> Kehadiran Hari Ini <span class="muted" style="font-weight:400">(otomatis diperbarui tiap 30 detik)</span></h2>
+      <div class="tw"><table><thead><tr><th>Nama Guru</th><th>NIP</th><th>Status</th><th>Masuk</th><th>Pulang</th><th>Lokasi</th><th>Foto / Wajah</th></tr></thead><tbody>
+      ${recs.map(({t,r})=>`<tr>
+        <td><div class="who">${avatar(t)}<div><b>${esc(t.name)}</b>${t.mapel?`<div class="muted">${esc(t.mapel)}</div>`:''}</div></div></td>
+        <td>${esc(fmtNip(t.nip))}</td>
+        <td><span class="badge b-${r?r.status:'Belum'}">${r?r.status:'Belum absen'}</span></td>
+        <td>${esc(r?.in?.time||'-')}</td><td>${esc(r?.out?.time||'-')}</td>
+        <td>${r?.in?(r.in.inside?'<span class="badge b-in">Di Sekolah</span>':`<span class="badge b-out">Di Luar (${esc(r.in.dist)} m)</span>`)+` <a href="https://www.google.com/maps?q=${encodeURIComponent(r.in.lat+','+r.in.lng)}" target="_blank" rel="noopener" title="Buka di Google Maps"><i class="fa-solid fa-map-location-dot"></i></a>`:'-'}</td>
+        <td>${r?.in?.selfie?`<img class="thumb" src="${esc(r.in.selfie)}" alt="Foto" onclick="viewImg(this.src)">`:'-'}${r?.in?.face?` <span class="badge b-in" title="Selisih ${esc(r.in.face.match)}">Wajah ✓</span>`:''}</td></tr>`).join('')||'<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">Belum ada data.</td></tr>'}
+      </tbody></table></div>
+    </div>`;
+  };
+  draw();
+  const refresh=async(manual)=>{
+    if(S.view!=='adminHome') return;
+    try{ await Store.loadMonth(ym,null); draw(); if(manual) toast('Data diperbarui.','success'); }
+    catch(e){ if(manual) toast(fbMsg(e),'error'); }
+  };
+  $('#btnRefresh').onclick=()=>refresh(true);
+  if(CLOUD) timers.push(setInterval(()=>refresh(false),30000));
+}
+
+/* =====================================================================
+   4. DATA GURU (CRUD, sandi, wajah)
+   ===================================================================== */
+async function vTeachers(tok=renderSeq){
+  const missing=DATA_GURU_AWAL.filter(g=>!teachers.some(t=>t.nip===g.nip)).length;
+  $('#app').innerHTML=`
+  <div class="page-title"><i class="fa-solid fa-users"></i> Data Guru
+    <div class="spacer"></div>
+    ${missing?`<button class="btn green" onclick="Teach.seed()"><i class="fa-solid fa-users-gear"></i> Muat Data Guru Awal (${missing})</button>`:''}
+    <button class="btn primary" onclick="Teach.form()"><i class="fa-solid fa-plus"></i> Tambah Guru</button></div>
+  <div class="alert info" style="margin:0 0 14px"><i class="fa-solid fa-key"></i><div>Guru masuk memakai <b>NIP + kata sandi</b> yang Anda atur di sini. Klik tombol <b>Sandi</b> untuk mengganti kata sandi guru kapan saja. Sandi awal data guru: <code>${SANDI_AWAL}</code>.</div></div>
+  <div class="card"><div class="tw"><table><thead><tr><th class="c">No</th><th>Nama Guru</th><th>NIP (username)</th><th>Mapel</th><th>Kata Sandi</th><th class="c">Wajah</th><th class="c">Aksi</th></tr></thead><tbody>
+  ${teachers.map((t,i)=>`<tr class="${t.aktif===false?'off':''}"><td class="c">${i+1}</td>
+   <td><div class="who">${avatar(t)}<div><b>${esc(t.name)}</b>${t.aktif===false?' <span class="badge b-Belum">Nonaktif</span>':''}</div></div></td>
+   <td>${esc(fmtNip(t.nip))}</td><td>${t.mapel?esc(t.mapel):'<span class="muted">-</span>'}</td>
+   <td style="white-space:nowrap"><code id="pw_${esc(t.nip)}" data-show="0">••••••</code> <button class="btn sm" title="Tampilkan/sembunyikan" onclick="Teach.peek('${esc(t.nip)}')"><i class="fa-solid fa-eye"></i></button></td>
+   <td class="c">${(t.face&&t.face.length)?'<span class="badge b-in">Terdaftar</span>':'<span class="badge b-Belum">Belum</span>'}</td>
+   <td class="c" style="white-space:nowrap"><button class="btn sm" title="Kelola data wajah" onclick="Teach.faceMenu('${esc(t.nip)}')"><i class="fa-solid fa-face-smile"></i> Wajah</button>
+   <button class="btn sm" title="Ganti kata sandi" onclick="Teach.pass('${esc(t.nip)}')"><i class="fa-solid fa-key"></i> Sandi</button>
+   <button class="btn sm" onclick="Teach.form('${esc(t.nip)}')"><i class="fa-solid fa-pen"></i> Edit</button>
+   <button class="btn sm ${t.aktif===false?'green':'red'}" title="${t.aktif===false?'Aktifkan':'Nonaktifkan'}" onclick="Teach.toggle('${esc(t.nip)}')"><i class="fa-solid ${t.aktif===false?'fa-user-check':'fa-user-slash'}"></i></button></td></tr>`).join('')||'<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">Belum ada data guru. Klik “Muat Data Guru Awal” atau “Tambah Guru”.</td></tr>'}
+  </tbody></table></div></div>`;
+}
+
+const Teach={
+  photo:'',
+  peek(nip){
+    const el=$('#pw_'+nip), t=teachers.find(x=>x.nip===nip); if(!el||!t) return;
+    const show=el.dataset.show!=='1'; el.dataset.show=show?'1':'0'; el.textContent=show?(t.password||'(tidak diketahui)'):'••••••';
+  },
+  seed(){
+    return locked(async()=>{
+      if(!confirmBox('Muat data 9 guru awal? Guru yang sudah ada tidak diubah. Sandi awal: '+SANDI_AWAL)) return;
+      toast('Memuat data guru… jangan tutup halaman.','info');
+      const r=await Store.seedInitial((i,n,name)=>{ toast(`(${i}/${n}) ${name}`,'info'); });
+      await Store.log('Admin','Muat data guru awal',`berhasil ${r.ok}, dilewati ${r.skip}, gagal ${r.fail}`);
+      if(r.fail) toast(`Selesai: ${r.ok} berhasil, ${r.fail} gagal. ${r.errs.join(' | ')}`,'error');
+      else toast(`Selesai: ${r.ok} guru ditambahkan.`,'success');
+      vTeachers();
+    });
+  },
+  form(nip){
+    const t=teachers.find(x=>x.nip===nip); const edit=!!t;
+    const v=t||{name:'',nip:'',mapel:'',photo:''}; Teach.photo=v.photo||'';
+    openModal(`<h3>${edit?'Edit':'Tambah'} Guru</h3>
+      <label>Nama Lengkap (beserta gelar)</label><input type="text" id="tName" value="${esc(v.name)}">
+      <label>NIP (8–18 digit angka)${edit?' – tidak dapat diubah':''}</label><input type="text" id="tNip" inputmode="numeric" value="${esc(fmtNip(v.nip))}" ${edit?'readonly':''}>
+      <label>Mata Pelajaran / Jabatan (opsional)</label><input type="text" id="tMapel" value="${esc(v.mapel)}">
+      ${edit?'':`<label>Kata Sandi Login (min. ${MIN_PASS} karakter)</label><input type="text" id="tPass" value="${SANDI_AWAL}" autocomplete="off">`}
+      <label>Foto (opsional)</label>
+      <div class="row"><span id="tPrev">${v.photo?`<img class="avatar" src="${esc(v.photo)}" alt="">`:'<span class="avatar">?</span>'}</span><input type="file" id="tFile" accept="image/*" style="flex:1"></div>
+      <div class="row end" style="margin-top:16px"><button class="btn" onclick="closeModal()">Batal</button><button class="btn primary" onclick="Teach.save('${esc(nip||'')}')">Simpan</button></div>`);
+    $('#tFile').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; Teach.photo=await resizeImage(f,160,false); $('#tPrev').innerHTML=`<img class="avatar" src="${Teach.photo}" alt="">`; };
+  },
+  save(nip){
+    return locked(async()=>{
+      const edit=!!nip;
+      const name=$('#tName').value.trim(), nn=edit?nip:$('#tNip').value.replace(/\D/g,''), mapel=$('#tMapel').value.trim();
+      const pass=edit?'':$('#tPass').value.trim();
+      if(!name||!nn) return toast('Nama dan NIP wajib diisi.','error');
+      if(!isDigits(nn)||nn.length<8||nn.length>18) return toast('NIP harus 8–18 digit angka.','error');
+      if(!edit && pass.length<MIN_PASS) return toast(`Kata sandi minimal ${MIN_PASS} karakter.`,'error');
+      try{
+        if(edit){ await Store.updateTeacher({nip,name,mapel,photo:Teach.photo}); await Store.log('Admin','Edit guru',name); }
+        else{ await Store.addTeacher({nip:nn,name,mapel,photo:Teach.photo},pass); await Store.log('Admin','Tambah guru',name); }
+        closeModal(); toast('Data guru disimpan.','success'); vTeachers();
+      }catch(e){ toast(fbMsg(e),'error'); }
+    });
+  },
+  toggle(nip){
+    return locked(async()=>{
+      const t=teachers.find(x=>x.nip===nip); if(!t) return;
+      const to=t.aktif===false;
+      if(!to && !confirmBox(`Nonaktifkan ${t.name}? Guru tidak bisa login dan tidak muncul di rekap. Riwayat absensi tetap tersimpan.`)) return;
+      try{ await Store.setActive(nip,to); await Store.log('Admin',to?'Aktifkan guru':'Nonaktifkan guru',t.name); toast(to?'Guru diaktifkan.':'Guru dinonaktifkan.','success'); vTeachers(); }
+      catch(e){ toast(fbMsg(e),'error'); }
+    });
+  },
+
+  /* ----- sandi ----- */
+  pass(nip){
+    const t=teachers.find(x=>x.nip===nip); if(!t) return;
+    openModal(`<h3>Ganti Kata Sandi</h3><p class="muted">${esc(t.name)} • NIP ${esc(fmtNip(t.nip))}</p>
+      <label>Kata sandi baru (minimal ${MIN_PASS} karakter)</label>
+      <div class="row" style="flex-wrap:nowrap"><input type="text" id="pNew" value="" autocomplete="off" placeholder="Ketik kata sandi baru"><button class="btn" type="button" onclick="Teach.rand()" title="Buat acak"><i class="fa-solid fa-dice"></i></button></div>
+      <div class="row end" style="margin-top:16px"><button class="btn" onclick="closeModal()">Batal</button><button class="btn primary" onclick="Teach.savePass('${esc(nip)}')">Simpan</button></div>`);
+    setTimeout(()=>{ const i=$('#pNew'); if(i) i.focus(); },50);
+  },
+  rand(){ const c='abcdefghjkmnpqrstuvwxyz23456789'; let s=''; for(let i=0;i<6;i++) s+=c[Math.floor(Math.random()*c.length)]; $('#pNew').value=s; },
+  savePass(nip){
+    return locked(async()=>{
+      const t=teachers.find(x=>x.nip===nip), p=$('#pNew').value.trim();
+      if(!t) return;
+      if(p.length<MIN_PASS) return toast(`Kata sandi minimal ${MIN_PASS} karakter.`,'error');
+      try{
+        await Store.setPassword(nip,p); await Store.log('Admin','Ganti kata sandi guru',t.name);
+        closeModal(); toast(`Kata sandi ${t.name} diganti. Sampaikan ke guru yang bersangkutan.`,'success'); vTeachers();
+      }catch(e){ toast(fbMsg(e),'error'); }
+    });
+  },
+
+  /* ----- wajah ----- */
+  faceMenu(nip){
+    const t=teachers.find(x=>x.nip===nip); if(!t) return; const has=!!(t.face&&t.face.length);
+    openModal(`<h3>Data Wajah</h3><p class="muted">${esc(t.name)} • NIP ${esc(fmtNip(t.nip))}</p>
+      <div class="alert ${has?'ok':'warn'}"><i class="fa-solid fa-face-smile"></i><div>Status: <b>${has?'Wajah sudah terdaftar':'Belum terdaftar'}</b>. ${has?'':'Guru dapat mendaftar sendiri saat absen pertama, atau admin mendaftarkan di sini (guru berada di depan kamera).'}</div></div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn green" onclick="Teach.faceEnroll('${esc(nip)}')"><i class="fa-solid fa-camera"></i> ${has?'Daftar ulang wajah':'Daftarkan wajah sekarang'}</button>
+        ${has?`<button class="btn red" onclick="Teach.faceClear('${esc(nip)}')"><i class="fa-solid fa-trash"></i> Hapus data wajah</button>`:''}
+        <button class="btn" onclick="closeModal()">Tutup</button></div>`);
+  },
+  faceEnroll(nip){
+    return locked(async()=>{ const t=teachers.find(x=>x.nip===nip); closeModal(); if(!t) return; await Face.enroll(t); vTeachers(); });
+  },
+  faceClear(nip){
+    return locked(async()=>{
+      const t=teachers.find(x=>x.nip===nip); if(!t||!confirmBox(`Hapus data wajah ${t.name}? Guru harus mendaftar ulang saat absen berikutnya.`)) return;
+      try{ await Store.clearFace(nip); await Store.log('Admin','Hapus data wajah',t.name); closeModal(); toast('Data wajah dihapus.','success'); vTeachers(); }
+      catch(e){ toast(fbMsg(e),'error'); }
+    });
+  }
+};
+window.Teach=Teach;
+
+/* Perkecil gambar → dataURL (hemat ruang). contain=true: kotak penuh tanpa terpotong */
+function resizeImage(file,size,contain){
+  return new Promise(res=>{
+    const fr=new FileReader();
+    fr.onerror=()=>res('');
+    fr.onload=()=>{ const img=new Image(); img.onerror=()=>res(''); img.onload=()=>{
+      const c=document.createElement('canvas'); c.width=c.height=size; const x=c.getContext('2d');
+      if(contain){ const k=Math.min(size/img.width,size/img.height), w=img.width*k, h=img.height*k; x.drawImage(img,(size-w)/2,(size-h)/2,w,h); res(c.toDataURL('image/png')); }
+      else { const k=Math.max(size/img.width,size/img.height), w=img.width*k, h=img.height*k; x.drawImage(img,(size-w)/2,(size-h)/2,w,h); res(c.toDataURL('image/jpeg',.8)); }
+    }; img.src=fr.result; };
+    fr.readAsDataURL(file);
+  });
+}
+
+/* =====================================================================
+   5. REKAP BULANAN + GRAFIK + DOWNLOAD
+   ===================================================================== */
+async function vRecap(tok=renderSeq){
+  try{ await Store.loadMonth(ymOf(S.year,S.month),null); }catch(e){ toast(fbMsg(e),'error'); }
+  if(tok!==renderSeq) return;
+  const {days,rows}=recapData(S.year,S.month);
+  const avg=rows.length?rows.reduce((a,r)=>a+r.pct,0)/rows.length:0;
+  const best=(days&&rows.length)?[...rows].sort((a,b)=>b.pct-a.pct||b.h-a.h)[0]:null;
+  $('#app').innerHTML=`
+  <div class="page-title"><i class="fa-solid fa-chart-column"></i> Rekap Kehadiran Bulanan</div>
+  <div class="card">
+    <div class="row">
+      <select id="rMon" style="width:auto">${BULAN.map((b,i)=>`<option value="${i}" ${i===S.month?'selected':''}>${b}</option>`).join('')}</select>
+      <input type="number" id="rYr" value="${S.year}" style="width:100px">
+      <div class="spacer"></div>
+      <button class="btn" onclick="Recap.manual()"><i class="fa-solid fa-pen-to-square"></i> Catat Manual</button>
+      <button class="btn red" onclick="Recap.pdf()"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+      <button class="btn green" onclick="Recap.xlsx()"><i class="fa-solid fa-file-excel"></i> Excel</button>
+      <button class="btn" onclick="Recap.csv()"><i class="fa-solid fa-file-csv"></i> CSV</button>
+    </div>
+    <div class="muted" style="margin-top:8px">Hari kerja efektif sampai saat ini: <b>${days}</b> hari. Rumus: % Kehadiran = (Hadir + Terlambat) ÷ Hari Kerja × 100%. Alpa = hari kerja tanpa catatan.</div>
+  </div>
+  <div class="grid g4" style="margin-top:16px">
+    <div class="card stat"><div class="ic" style="background:#1E3A8A"><i class="fa-solid fa-users"></i></div><div><b>${rows.length}</b><span>Total Guru</span></div></div>
+    <div class="card stat"><div class="ic" style="background:#10B981"><i class="fa-solid fa-percent"></i></div><div><b>${avg.toFixed(1)}%</b><span>Rata-rata Kehadiran</span></div></div>
+    <div class="card stat" style="grid-column:span 2"><div class="ic" style="background:#F59E0B"><i class="fa-solid fa-trophy"></i></div><div><b style="font-size:16px">${best?esc(best.name):'-'}</b><span>Guru paling disiplin${best?' ('+best.pct.toFixed(1)+'%)':''}</span></div></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h2><i class="fa-solid fa-chart-bar"></i> % Kehadiran per Guru</h2><div class="chartbox"><canvas id="chBar"></canvas></div></div>
+    <div class="card"><h2><i class="fa-solid fa-chart-pie"></i> Komposisi Kehadiran</h2><div class="chartbox"><canvas id="chPie"></canvas></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h2><i class="fa-solid fa-table"></i> Tabel Rekap – ${BULAN[S.month]} ${S.year}</h2>
+    <div class="tw"><table><thead><tr><th class="c">No</th><th>Nama Guru</th><th>NIP</th><th class="c">Hadir</th><th class="c">Terlambat</th><th class="c">Izin</th><th class="c">Sakit</th><th class="c">Cuti</th><th class="c">Alpa</th><th class="c">% Kehadiran</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td class="c">${r.no}</td><td><b>${esc(r.name)}</b></td><td>${esc(fmtNip(r.nip))}</td><td class="c">${r.h}</td><td class="c">${r.te}</td><td class="c">${r.iz}</td><td class="c">${r.sk}</td><td class="c">${r.cu}</td><td class="c">${r.alpa}</td>
+      <td class="c"><span class="badge" style="background:${r.pct>=90?'#D1FAE5':r.pct>=75?'#FEF3C7':'#FEE2E2'};color:${r.pct>=90?'#065F46':r.pct>=75?'#92400E':'#991B1B'}">${r.pct.toFixed(1)}%</span></td></tr>`).join('')||'<tr><td colspan="10" style="text-align:center;padding:20px" class="muted">Belum ada guru aktif.</td></tr>'}
+    </tbody></table></div></div>`;
+  $('#rMon').onchange=()=>{ S.month=+$('#rMon').value; vRecap(); };
+  $('#rYr').onchange=()=>{ S.year=+$('#rYr').value||S.year; vRecap(); };
+
+  if(window.Chart){
+    chartObjs.push(new Chart($('#chBar'),{type:'bar',
+      data:{labels:rows.map(r=>r.name.split(',')[0]),datasets:[{label:'% Kehadiran',data:rows.map(r=>+r.pct.toFixed(1)),backgroundColor:rows.map(r=>r.pct>=90?'#10B981':r.pct>=75?'#F59E0B':'#DC2626'),borderRadius:6}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{min:0,max:100,ticks:{callback:v=>v+'%'}}},plugins:{legend:{display:false}}}}));
+    const sum=k=>rows.reduce((a,r)=>a+r[k],0);
+    chartObjs.push(new Chart($('#chPie'),{type:'doughnut',
+      data:{labels:['Hadir','Terlambat','Izin','Sakit','Cuti','Alpa'],datasets:[{data:[sum('h'),sum('te'),sum('iz'),sum('sk'),sum('cu'),sum('alpa')],backgroundColor:['#10B981','#F59E0B','#3B82F6','#EC4899','#8B5CF6','#DC2626']}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}}));
+  } else {
+    $$('.chartbox').forEach(b=>{ b.innerHTML='<div class="muted" style="padding:20px">Grafik belum termuat (butuh internet).</div>'; });
+  }
+}
+
+const Recap={
+  title(){ return `REKAP KEHADIRAN GURU - BULAN ${BULAN[S.month].toUpperCase()} ${S.year}`; },
+  head:['No','Nama Guru','NIP','Hadir','Terlambat','Izin','Sakit','Cuti','Alpa','% Kehadiran'],
+  body(){ return recapData(S.year,S.month).rows.map(r=>[r.no,r.name,fmtNip(r.nip),r.h,r.te,r.iz,r.sk,r.cu,r.alpa,r.pct.toFixed(1)+'%']); },
+  fname(ext){ return `Rekap_Kehadiran_Guru_${BULAN[S.month]}_${S.year}.${ext}`; },
+
+  /* ---- PDF: kop + logo + tabel + tanda tangan Kepala Sekolah ---- */
+  async pdf(){
+    if(!window.jspdf || !window.jspdf.jsPDF) return toast('Library PDF belum termuat (butuh internet).','error');
+    try{
+      const {jsPDF}=window.jspdf, doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+      if(typeof doc.autoTable!=='function') return toast('Plugin tabel PDF belum termuat (butuh internet).','error');
+      const W_=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight();
+      const logo=await logoPng(); if(logo) doc.addImage(logo,'PNG',15,8,24,24);
+      doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.text(String(settings.instansi).toUpperCase(),W_/2,14,{align:'center'});
+      doc.setFontSize(16); doc.text(String(settings.schoolName).toUpperCase(),W_/2,22,{align:'center'});
+      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.text(String(settings.address),W_/2,28,{align:'center'});
+      doc.setLineWidth(.8); doc.line(15,35,W_-15,35); doc.setLineWidth(.2); doc.line(15,36.2,W_-15,36.2);
+      doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.text(Recap.title(),W_/2,44,{align:'center'});
+      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.text(`Hari kerja efektif: ${recapData(S.year,S.month).days} hari`,W_/2,49,{align:'center'});
+      doc.autoTable({startY:53,head:[Recap.head],body:Recap.body(),theme:'grid',styles:{fontSize:9,cellPadding:2},
+        headStyles:{fillColor:[30,58,138],halign:'center'},columnStyles:{0:{halign:'center',cellWidth:10},3:{halign:'center'},4:{halign:'center'},5:{halign:'center'},6:{halign:'center'},7:{halign:'center'},8:{halign:'center'},9:{halign:'center',fontStyle:'bold'}},margin:{left:15,right:15}});
+      let y=doc.lastAutoTable.finalY+10; if(y>H-52){ doc.addPage(); y=25; }
+      const x=W_-85; doc.setFontSize(10); doc.setFont('helvetica','normal');
+      doc.text(`${settings.city}, ${tglIndo()}`,x,y); doc.text(`Kepala ${settings.schoolName}`,x,y+5);
+      doc.setFont('helvetica','bold'); const ny=y+30; doc.text(settings.headName,x,ny);
+      doc.setLineWidth(.3); doc.line(x,ny+1,x+doc.getTextWidth(settings.headName),ny+1);
+      doc.setFont('helvetica','normal'); doc.text(`NIP. ${settings.headNip}`,x,ny+6);
+      doc.save(Recap.fname('pdf')); Store.log('Admin','Unduh rekap PDF',`${BULAN[S.month]} ${S.year}`); toast('PDF berhasil dibuat.','success');
+    }catch(e){ console.warn(e); toast('Gagal membuat PDF: '+(e.message||e),'error'); }
+  },
+  xlsx(){
+    if(!window.XLSX) return toast('Library Excel belum termuat (butuh internet).','error');
+    try{
+      const ws=XLSX.utils.aoa_to_sheet([[String(settings.schoolName).toUpperCase()],[Recap.title()],[],Recap.head,...Recap.body(),[],[`${settings.city}, ${tglIndo()}`],[`Kepala ${settings.schoolName}`],[],[],[settings.headName],['NIP. '+settings.headNip]]);
+      ws['!cols']=[{wch:5},{wch:32},{wch:24},{wch:8},{wch:11},{wch:7},{wch:7},{wch:7},{wch:7},{wch:14}];
+      ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:9}},{s:{r:1,c:0},e:{r:1,c:9}}];
+      const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Rekap');
+      XLSX.writeFile(wb,Recap.fname('xlsx')); Store.log('Admin','Unduh rekap Excel',`${BULAN[S.month]} ${S.year}`); toast('Excel berhasil dibuat.','success');
+    }catch(e){ console.warn(e); toast('Gagal membuat Excel: '+(e.message||e),'error'); }
+  },
+  csv(){
+    const q=v=>`"${String(v).replace(/"/g,'""')}"`;
+    const txt='﻿'+[Recap.head,...Recap.body()].map(r=>r.map(q).join(',')).join('\r\n');
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'})); a.download=Recap.fname('csv');
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+    Store.log('Admin','Unduh rekap CSV',`${BULAN[S.month]} ${S.year}`); toast('CSV berhasil dibuat.','success');
+  },
+  /* Admin mencatat/mengoreksi kehadiran guru secara manual */
+  manual(){
+    const list=activeTeachers(); if(!list.length) return toast('Belum ada guru aktif.','warn');
+    openModal(`<h3>Catat Kehadiran Manual</h3><p class="muted">Untuk guru yang lupa absen, izin, sakit, atau koreksi data.</p>
+      <label>Guru</label><select id="mTeacher">${list.map(t=>`<option value="${esc(t.nip)}">${esc(t.name)}</option>`).join('')}</select>
+      <div class="cols"><div><label>Tanggal</label><input type="date" id="mDate" value="${todayStr()}"></div>
+      <div><label>Status</label><select id="mStat">${STATUS_LIST.map(s=>`<option>${s}</option>`).join('')}<option value="__hapus">Hapus catatan</option></select></div></div>
+      <div class="cols"><div><label>Jam Masuk</label><input type="time" id="mIn" value="07:00"></div><div><label>Jam Pulang</label><input type="time" id="mOut" value="${esc(settings.outTime)}"></div></div>
+      <label>Keterangan</label><input type="text" id="mNote" placeholder="Opsional">
+      <div class="row end" style="margin-top:14px"><button class="btn" onclick="closeModal()">Batal</button><button class="btn primary" onclick="Recap.saveManual()">Simpan</button></div>`);
+  },
+  saveManual(){
+    return locked(async()=>{
+      const nip=$('#mTeacher').value, date=$('#mDate').value, st=$('#mStat').value, note=$('#mNote').value.trim();
+      if(!date) return toast('Tanggal wajib diisi.','error');
+      try{
+        await Store.loadMonth(date.slice(0,7),null);
+        let rec=getRec(nip,date);
+        if(st==='__hapus'){
+          if(!rec) return toast('Tidak ada catatan pada tanggal itu.','warn');
+          await Store.adminDelAtt(rec);
+        } else {
+          rec={id:attKey(nip,date),nip,date,status:st,note:note||'(dicatat admin)'};
+          if(st==='Hadir'||st==='Terlambat'){
+            const base={lat:settings.lat,lng:settings.lng,dist:0,inside:true,address:'',selfie:'',face:null};
+            rec.in={...base,time:($('#mIn').value||'07:00')+':00'}; rec.out={...base,time:($('#mOut').value||settings.outTime)+':00'};
+          }
+          await Store.adminSetAtt(rec);
+        }
+        await Store.log('Admin','Catat manual',`${teachers.find(t=>t.nip===nip)?.name} • ${date} • ${st==='__hapus'?'dihapus':st}`);
+        closeModal(); toast('Catatan disimpan.','success'); vRecap();
+      }catch(e){ toast(fbMsg(e),'error'); }
+    });
+  }
+};
+window.Recap=Recap;
+
+function logoPng(){
+  return new Promise(r=>{ const img=new Image(); img.onload=()=>{ try{ const c=document.createElement('canvas'); c.width=c.height=256; c.getContext('2d').drawImage(img,0,0,256,256); r(c.toDataURL('image/png')); }catch(e){ r(null); } }; img.onerror=()=>r(null); img.src=settings.logo||DEFAULT_LOGO; });
+}
+
+/* =====================================================================
+   6. LOG AKTIVITAS
+   ===================================================================== */
+async function vLogs(tok=renderSeq){
+  await Store.loadLogs();
+  if(tok!==renderSeq) return;
+  $('#app').innerHTML=`<div class="page-title"><i class="fa-solid fa-clock-rotate-left"></i> Log Aktivitas<div class="spacer"></div>
+    <button class="btn sm" onclick="vLogs()"><i class="fa-solid fa-rotate"></i> Segarkan</button></div>
+  <div class="card"><div class="tw"><table><thead><tr><th>Waktu (WITA)</th><th>Pelaku</th><th>Aktivitas</th><th>Detail</th></tr></thead><tbody>
+  ${logs.map(l=>{ const ms=Date.parse(l.t); const w=isNaN(ms)?null:W(ms); const nm=l.actor==='Admin'?'Admin':(teachers.find(t=>t.nip===l.actor)?.name||l.actor);
+    return `<tr><td style="white-space:nowrap">${w?`${w.d} ${BULAN[w.m]} ${w.y} ${pad(w.hh)}:${pad(w.mm)}:${pad(w.ss)}`:'-'}</td><td>${esc(nm)}</td><td><b>${esc(l.action)}</b></td><td>${esc(l.detail)}</td></tr>`; }).join('')||'<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">Belum ada aktivitas.</td></tr>'}
+  </tbody></table></div></div>`;
+}
+
+/* =====================================================================
+   7. PENGATURAN
+   ===================================================================== */
+async function vSettings(tok=renderSeq){
+  const s=settings;
+  let admins=[];
+  try{ admins=await Store.listAdmins(); }catch(e){ toast(fbMsg(e),'error'); }
+  if(tok!==renderSeq) return;
+  $('#app').innerHTML=`
+  <div class="page-title"><i class="fa-solid fa-gear"></i> Pengaturan</div>
+  <div class="alert ${CLOUD?'ok':'warn'}" style="margin:0 0 14px"><i class="fa-solid fa-${CLOUD?'cloud':'triangle-exclamation'}"></i><div>${CLOUD?`<b>Mode Cloud</b> – data tersimpan di Firebase (proyek <code>${esc(FIREBASE_CONFIG.projectId)}</code>) dan dipakai bersama semua perangkat.`:'<b>Mode Demo</b> – data hanya di perangkat ini. Isi <code>FIREBASE_CONFIG</code> di index.html agar bisa dipakai semua perangkat.'}</div></div>
+  <div class="grid g2">
+    <div class="card"><h2><i class="fa-solid fa-school"></i> Identitas & Logo Sekolah</h2>
+      <div class="row" style="margin-bottom:6px"><img id="sLogoPrev" class="logo" style="background:#F1F5F9;width:70px;height:70px" alt="Logo" src="${esc(s.logo||DEFAULT_LOGO)}"><div style="flex:1">
+        <input type="file" id="sLogo" accept="image/*"><div class="muted">Unggah PNG/JPG (otomatis diperkecil).</div>
+        <button class="btn sm" style="margin-top:6px" onclick="Pref.resetLogo()">Pakai logo bawaan</button></div></div>
+      <label>Nama Sekolah</label><input type="text" id="sName" value="${esc(s.schoolName)}">
+      <label>Instansi</label><input type="text" id="sInst" value="${esc(s.instansi)}">
+      <label>Alamat</label><input type="text" id="sAddr" value="${esc(s.address)}">
+      <label>Kota (untuk tanda tangan rekap)</label><input type="text" id="sCity" value="${esc(s.city)}">
+    </div>
+
+    <div class="card"><h2><i class="fa-solid fa-user-tie"></i> Data Kepala Sekolah</h2>
+      <label>Nama Kepala Sekolah</label><input type="text" id="sHead" value="${esc(s.headName)}">
+      <label>NIP</label><input type="text" id="sHeadNip" value="${esc(s.headNip)}">
+      <p class="muted" style="margin-top:8px">Tampil di footer aplikasi dan tanda tangan rekap PDF/Excel.</p>
+      <h2 style="margin-top:20px"><i class="fa-solid fa-user-shield"></i> Akun Admin</h2>
+      <div class="tw"><table style="min-width:0"><thead><tr><th>Username</th><th>Nama</th><th class="c">Aksi</th></tr></thead><tbody>
+        ${admins.map(a=>`<tr><td>${esc(a.username)}</td><td>${esc(a.name)}</td><td class="c">${CLOUD&&S.user&&a.id!==S.user.uid?`<button class="btn sm red" onclick="Pref.delAdmin('${esc(a.id)}')"><i class="fa-solid fa-trash"></i></button>`:'<span class="muted">Anda</span>'}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">-</td></tr>'}
+      </tbody></table></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn sm" onclick="Pref.myPass()"><i class="fa-solid fa-key"></i> Ganti sandi saya</button>
+        ${CLOUD?'<button class="btn sm primary" onclick="Pref.addAdmin()"><i class="fa-solid fa-user-plus"></i> Tambah admin</button>':''}
+      </div>
+      ${CLOUD?'':`<div class="cols" style="margin-top:6px"><div><label>Username (Mode Demo)</label><input type="text" id="sAU" value="${esc(s.adminUser)}"></div></div>`}
+    </div>
+
+    <div class="card"><h2><i class="fa-solid fa-clock"></i> Jam & Hari Kerja</h2>
+      <div class="cols"><div><label>Batas Terlambat (check-in lewat jam)</label><input type="time" id="sLate" value="${esc(s.lateTime)}"></div>
+      <div><label>Jam Pulang</label><input type="time" id="sOut" value="${esc(s.outTime)}"></div></div>
+      <label>Hari Kerja</label>
+      <div class="row">${HARI.map((h,i)=>`<label style="display:flex;gap:5px;align-items:center;font-weight:400;margin:0"><input type="checkbox" class="wd" value="${i}" ${s.workDays.includes(i)?'checked':''} style="width:auto">${h}</label>`).join('')}</div>
+      <label>Hari Libur</label>
+      <div class="row"><input type="date" id="hDate" style="flex:1"><input type="text" id="hName" placeholder="Nama libur" style="flex:2"><button class="btn sm" onclick="Pref.addHol()"><i class="fa-solid fa-plus"></i></button></div>
+      <div class="chips" id="holList"></div>
+    </div>
+
+    <div class="card"><h2><i class="fa-solid fa-map-location-dot"></i> Lokasi Sekolah & Radius</h2>
+      <div id="setmap"></div>
+      <p class="muted" style="margin-top:6px">Klik peta untuk memindahkan titik sekolah.</p>
+      <div class="cols"><div><label>Latitude</label><input type="number" step="any" id="sLat" value="${s.lat}"></div><div><label>Longitude</label><input type="number" step="any" id="sLng" value="${s.lng}"></div></div>
+      <div class="cols"><div><label>Radius maksimal (meter)</label><input type="number" id="sRad" value="${s.radius}" min="10"></div>
+      <div style="align-self:end"><button class="btn" style="width:100%" onclick="Pref.useMyLoc()"><i class="fa-solid fa-crosshairs"></i> Pakai lokasi saya</button></div></div>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="sRev" ${s.reverseGeo?'checked':''} style="width:auto"> Cari alamat otomatis (reverse geocoding, butuh internet)</label>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="sSim" ${s.simulate?'checked':''} style="width:auto"> Mode simulasi lokasi (untuk uji coba tanpa GPS)</label>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px"><h2><i class="fa-solid fa-face-smile"></i> Pemindai Wajah</h2>
+    <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="sFace" ${s.faceRequired?'checked':''} style="width:auto"> Wajib scan wajah saat absen masuk &amp; pulang</label>
+    <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="sLive" ${s.faceLiveness?'checked':''} style="width:auto"> Minta kedip mata (pencegah foto/layar)</label>
+    <label>Tingkat kecocokan wajah</label>
+    <select id="sThr" style="max-width:320px">${[[0.45,'Ketat (0.45)'],[0.5,'Normal (0.5)'],[0.6,'Longgar (0.6)']].map(([v,l])=>`<option value="${v}" ${+s.faceThreshold===v?'selected':''}>${l}</option>`).join('')}</select>
+    <p class="muted" style="margin-top:8px">Data wajah guru disimpan sebagai angka (bukan foto). Kelola di menu Data Guru → tombol Wajah. Matikan opsi pertama bila kamera/CDN bermasalah.</p>
+  </div>
+  <div class="row end" style="margin-top:16px"><button class="btn primary big" style="max-width:260px" onclick="Pref.save()"><i class="fa-solid fa-floppy-disk"></i> Simpan Pengaturan</button></div>
+
+  <div class="card" style="margin-top:16px"><h2><i class="fa-solid fa-database"></i> Data</h2>
+    <div class="row">
+      <button class="btn" onclick="Pref.backup()"><i class="fa-solid fa-download"></i> Cadangkan (JSON)</button>
+      ${CLOUD?'':'<label class="btn" style="margin:0"><i class="fa-solid fa-upload"></i> Pulihkan<input type="file" accept=".json" style="display:none" onchange="Pref.restore(this.files[0])"></label><button class="btn" onclick="Pref.reseed()"><i class="fa-solid fa-wand-magic-sparkles"></i> Atur ulang data demo</button>'}
+      <button class="btn red" onclick="Pref.wipe()"><i class="fa-solid fa-trash"></i> Hapus semua absensi</button>
+    </div></div>`;
+  Pref.holidays=[...s.holidays]; Pref.drawHol();
+  Pref.logo=s.logo;
+  $('#sLogo').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; const d=await resizeImage(f,256,true); if(!d) return toast('Gambar tidak dapat dibaca.','error'); Pref.logo=d; $('#sLogoPrev').src=d; };
+  if(window.L){
+    mapObj=L.map('setmap').setView([s.lat,s.lng],16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(mapObj);
+    Pref.mk=L.marker([s.lat,s.lng]).addTo(mapObj); Pref.ci=L.circle([s.lat,s.lng],{radius:s.radius,color:'#10B981',fillOpacity:.15}).addTo(mapObj);
+    mapObj.on('click',e=>Pref.setLoc(e.latlng.lat,e.latlng.lng));
+  } else { $('#setmap').innerHTML='<div class="muted" style="padding:20px">Peta belum termuat (butuh internet). Isi koordinat secara manual.</div>'; Pref.mk=null; Pref.ci=null; }
+  ['sLat','sLng','sRad'].forEach(id=>$('#'+id).addEventListener('change',()=>Pref.fromInputs()));
+}
+
+const Pref={
+  holidays:[],logo:'',mk:null,ci:null,
+  setLoc(lat,lng){ $('#sLat').value=+lat.toFixed(6); $('#sLng').value=+lng.toFixed(6); Pref.fromInputs(); },
+  fromInputs(){
+    const la=+$('#sLat').value, ln=+$('#sLng').value, r=+$('#sRad').value||100; if(isNaN(la)||isNaN(ln)||!Pref.mk||!mapObj) return;
+    Pref.mk.setLatLng([la,ln]); Pref.ci.setLatLng([la,ln]); Pref.ci.setRadius(r); mapObj.setView([la,ln]);
+  },
+  useMyLoc(){
+    if(!navigator.geolocation) return toast('Browser tidak mendukung GPS.','error');
+    toast('Membaca lokasi Anda…','info');
+    navigator.geolocation.getCurrentPosition(p=>{ Pref.setLoc(p.coords.latitude,p.coords.longitude); if(mapObj) mapObj.setZoom(18); toast('Titik diambil dari lokasi Anda. Jangan lupa Simpan.','success'); },
+      ()=>toast('Gagal mengambil lokasi. Periksa izin lokasi.','error'),{enableHighAccuracy:true,timeout:15000});
+  },
+  addHol(){
+    const d=$('#hDate').value, n=$('#hName').value.trim()||'Libur'; if(!d) return toast('Pilih tanggal libur.','error');
+    if(Pref.holidays.some(h=>h.date===d)) return toast('Tanggal sudah ada.','warn');
+    Pref.holidays.push({date:d,name:n}); Pref.holidays.sort((a,b)=>a.date.localeCompare(b.date)); $('#hName').value=''; Pref.drawHol();
+  },
+  delHol(d){ Pref.holidays=Pref.holidays.filter(h=>h.date!==d); Pref.drawHol(); },
+  drawHol(){ $('#holList').innerHTML=Pref.holidays.map(h=>`<span class="chip">${tglIndoStr(h.date)} – ${esc(h.name)}<button onclick="Pref.delHol('${esc(h.date)}')"><i class="fa-solid fa-xmark"></i></button></span>`).join('')||'<span class="muted">Belum ada hari libur.</span>'; },
+  resetLogo(){ Pref.logo=''; $('#sLogoPrev').src=DEFAULT_LOGO; },
+  save(){
+    return locked(async()=>{
+      const lat=+$('#sLat').value, lng=+$('#sLng').value, rad=+$('#sRad').value;
+      if(isNaN(lat)||isNaN(lng)||lat<-90||lat>90||lng<-180||lng>180) return toast('Koordinat tidak valid.','error');
+      if(!rad||rad<10) return toast('Radius minimal 10 meter.','error');
+      const wd=$$('.wd').filter(c=>c.checked).map(c=>+c.value); if(!wd.length) return toast('Pilih minimal satu hari kerja.','error');
+      if(!$('#sName').value.trim()||!$('#sHead').value.trim()) return toast('Nama sekolah dan kepala sekolah wajib diisi.','error');
+      const prev=Object.assign({},settings);
+      Object.assign(settings,{schoolName:$('#sName').value.trim(),instansi:$('#sInst').value.trim(),address:$('#sAddr').value.trim(),city:$('#sCity').value.trim(),logo:Pref.logo,
+        headName:$('#sHead').value.trim(),headNip:$('#sHeadNip').value.trim(),
+        lateTime:$('#sLate').value||'07:15',outTime:$('#sOut').value||'14:00',workDays:wd,holidays:Pref.holidays,lat,lng,radius:rad,
+        reverseGeo:$('#sRev').checked,simulate:$('#sSim').checked,
+        faceRequired:$('#sFace').checked,faceLiveness:$('#sLive').checked,faceThreshold:+$('#sThr').value||0.5});
+      if(!CLOUD){ const u=$('#sAU') ? $('#sAU').value.trim() : settings.adminUser; if(!u) { settings=prev; return toast('Username admin tidak boleh kosong.','error'); } settings.adminUser=u; }
+      try{ await Store.saveSettings(); await Store.log('Admin','Ubah pengaturan',''); toast('Pengaturan disimpan.','success'); applyBranding(); }
+      catch(e){ settings=prev; toast(fbMsg(e),'error'); }
+    });
+  },
+
+  myPass(){
+    openModal(`<h3>Ganti Kata Sandi Saya</h3>
+      <label>Kata sandi lama</label><input type="password" id="cOld" autocomplete="current-password">
+      <label>Kata sandi baru (min. ${MIN_PASS} karakter)</label><input type="password" id="cNew" autocomplete="new-password">
+      <label>Ulangi kata sandi baru</label><input type="password" id="cNew2" autocomplete="new-password">
+      <div class="row end" style="margin-top:16px"><button class="btn" onclick="closeModal()">Batal</button><button class="btn primary" onclick="Pref.saveMyPass()">Simpan</button></div>`);
+  },
+  saveMyPass(){
+    return locked(async()=>{
+      const o=$('#cOld').value, n=$('#cNew').value, n2=$('#cNew2').value;
+      if(!o) return toast('Isi kata sandi lama.','error');
+      if(n.length<MIN_PASS) return toast(`Kata sandi baru minimal ${MIN_PASS} karakter.`,'error');
+      if(n!==n2) return toast('Ulangi kata sandi baru dengan benar.','error');
+      try{ await Store.changeMyPassword(o,n); await Store.log('Admin','Ganti sandi admin',S.user.username||''); closeModal(); toast('Kata sandi diganti.','success'); }
+      catch(e){ toast(fbMsg(e),'error'); }
+    });
+  },
+  addAdmin(){
+    openModal(`<h3>Tambah Admin</h3>
+      <label>Nama</label><input type="text" id="aNama">
+      <label>Username (huruf kecil/angka)</label><input type="text" id="aUser" autocapitalize="none">
+      <label>Kata sandi (min. ${MIN_PASS} karakter)</label><input type="text" id="aPass" autocomplete="off">
+      <div class="row end" style="margin-top:16px"><button class="btn" onclick="closeModal()">Batal</button><button class="btn primary" onclick="Pref.saveAdmin()">Simpan</button></div>`);
+  },
+  saveAdmin(){
+    return locked(async()=>{
+      const nama=$('#aNama').value.trim(), u=$('#aUser').value.trim(), p=$('#aPass').value;
+      if(!u) return toast('Username wajib diisi.','error');
+      if(p.length<MIN_PASS) return toast(`Kata sandi minimal ${MIN_PASS} karakter.`,'error');
+      try{ await Store.addAdmin(u,nama,p); await Store.log('Admin','Tambah admin',u); closeModal(); toast('Admin ditambahkan.','success'); vSettings(); }
+      catch(e){ toast(fbMsg(e),'error'); }
+    });
+  },
+  delAdmin(id){
+    return locked(async()=>{
+      if(!confirmBox('Hapus akses admin ini?')) return;
+      try{ await Store.delAdmin(id); await Store.log('Admin','Hapus admin',id); toast('Akses admin dihapus.','success'); vSettings(); }
+      catch(e){ toast(fbMsg(e),'error'); }
+    });
+  },
+
+  async backup(){
+    try{
+      const data=await Store.backupData();
+      const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));
+      a.download=`cadangan_absensi_${todayStr()}.json`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+      toast('Cadangan diunduh.','success');
+    }catch(e){ toast(fbMsg(e),'error'); }
+  },
+  restore(f){
+    if(!f) return; const fr=new FileReader();
+    fr.onload=async()=>{ try{ await Store.restoreData(JSON.parse(fr.result)); toast('Data berhasil dipulihkan.','success'); render(); }catch(e){ toast(e instanceof SyntaxError?'File cadangan tidak valid.':fbMsg(e),'error'); } };
+    fr.readAsText(f);
+  },
+  reseed(){
+    return locked(async()=>{
+      if(!confirmBox('Ganti SEMUA data guru & absensi dengan data awal (9 guru) dan absensi contoh?')) return;
+      try{ await Store.resetDemo(); await Store.log('Admin','Atur ulang data demo',''); toast('Data demo diatur ulang.','success'); render(); }catch(e){ toast(fbMsg(e),'error'); }
+    });
+  },
+  wipe(){
+    return locked(async()=>{
+      if(!confirmBox('Hapus SEMUA data absensi? Tindakan ini tidak dapat dibatalkan.')) return;
+      try{ await Store.wipeAtt(); await Store.log('Admin','Hapus semua absensi',''); toast('Seluruh data absensi dihapus.','success'); }catch(e){ toast(fbMsg(e),'error'); }
+    });
+  }
+};
+window.Pref=Pref;
+
+/* =====================================================================
+   PEMINDAI WAJAH (face-api.js)
+   - Pendaftaran: 3 sampel wajah disimpan sebagai angka (descriptor 128 nilai), BUKAN foto.
+   - Verifikasi: wajah di kamera dibandingkan dengan data terdaftar (jarak Euclidean).
+   - Anti-foto sederhana: guru diminta mengedipkan mata (dapat dimatikan di Pengaturan).
+   ===================================================================== */
+const FACE_MODEL_URL='https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/';
+const Face={
+  loaded:false, loading:null,
+  async load(){
+    if(Face.loaded) return;
+    if(!window.faceapi) throw appErr('Library pemindai wajah belum termuat (butuh internet).');
+    if(!Face.loading) Face.loading=Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(FACE_MODEL_URL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODEL_URL)
+    ]).then(()=>{ Face.loaded=true; }).catch(e=>{ Face.loading=null; throw e; });
+    await Face.loading;
+  },
+  /* Eye Aspect Ratio: kecil saat mata menutup */
+  ear(eye){ const d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y); return (d(eye[1],eye[5])+d(eye[2],eye[4]))/(2*d(eye[0],eye[3])); },
+  snap(v){ const c=document.createElement('canvas'), w=200, h=Math.round(v.videoHeight/v.videoWidth*w); c.width=w; c.height=h; c.getContext('2d').drawImage(v,0,0,w,h); return c.toDataURL('image/jpeg',.55); },
+
+  /* Jendela kamera + pemindaian. opt: {title, mode:'verify'|'enroll', refs, threshold, liveness}
+     Hasil: {ok:true,dist,photo,descs} | {ok:false,reason} | null (dibatalkan) */
+  scan(opt){
+    return new Promise(resolve=>{
+      const o=openModal(`<h3>${esc(opt.title)}</h3>
+        <p class="muted">Hadapkan wajah ke kamera di tempat yang terang. Lepas masker/kacamata gelap.</p>
+        <div class="facebox"><video id="fVid" autoplay playsinline muted></video></div>
+        <div id="fStat" class="alert info"><i class="fa-solid fa-spinner fa-spin"></i><div>Memuat pemindai wajah…</div></div>
+        <div class="row end" style="margin-top:12px"><button class="btn" id="fCancel">Batal</button></div>`);
+      o.dataset.lock='1';
+      let stream=null, done=false;
+      const finish=v=>{ if(done) return; done=true; if(stream) stream.getTracks().forEach(t=>t.stop()); closeModal(); resolve(v); };
+      const say=(html,cls='info',ic='fa-circle-info')=>{ const el=$('#fStat'); if(el){ el.className='alert '+cls; el.innerHTML=`<i class="fa-solid ${ic}"></i><div>${html}</div>`; } };
+      $('#fCancel').onclick=()=>finish(null);
+
+      (async()=>{
+        try{ await Face.load(); }
+        catch(e){ toast('Pemindai wajah gagal dimuat: '+fbMsg(e)+' Admin dapat menonaktifkan wajib scan wajah di Pengaturan.','error'); return finish(null); }
+        if(done) return;
+        if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ toast('Kamera tidak tersedia. Buka aplikasi lewat HTTPS.','error'); return finish(null); }
+        try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false}); }
+        catch(e){ toast('Izin kamera ditolak. Izinkan kamera di pengaturan browser.','error'); return finish(null); }
+        if(done){ stream.getTracks().forEach(t=>t.stop()); return; }
+        const v=$('#fVid'); v.srcObject=stream; try{ await v.play(); }catch(e){}
+
+        const det=new faceapi.TinyFaceDetectorOptions({inputSize:224,scoreThreshold:0.5});
+        const needBlink=!!opt.liveness;
+        let stage=needBlink?'blink':'capture', sawOpen=false, sawClosed=false, tries=0;
+        const samples=[], t0=Date.now(), LIMIT=30000;
+        say('Menyiapkan kamera…');
+
+        while(!done){
+          if(!document.body.contains(o)) return finish(null);           // jendela ditutup
+          if(Date.now()-t0>LIMIT) return finish({ok:false,reason:needBlink&&stage==='blink'?'Kedipan mata tidak terdeteksi. Coba lagi dengan wajah lebih dekat dan cahaya lebih terang.':'Waktu pemindaian habis. Coba lagi.'});
+          if(!v.videoWidth){ await sleep(100); continue; }
+
+          let r=null;
+          try{ r=await faceapi.detectSingleFace(v,det).withFaceLandmarks(); }catch(e){ r=null; }
+          if(done) return;
+          if(!r){ say('Wajah tidak terdeteksi. Hadapkan wajah ke kamera.','warn','fa-face-frown'); await sleep(120); continue; }
+          if(r.detection.box.width < v.videoWidth*0.22){ say('Dekatkan wajah ke kamera.','warn','fa-up-right-and-down-left-from-center'); await sleep(120); continue; }
+
+          if(stage==='blink'){
+            const lm=r.landmarks, e=(Face.ear(lm.getLeftEye())+Face.ear(lm.getRightEye()))/2;
+            if(e>0.24){ if(sawClosed) stage='capture'; else sawOpen=true; }
+            else if(e<0.19 && sawOpen) sawClosed=true;
+            if(stage==='blink'){ say(sawOpen?'<b>Kedipkan mata</b> satu kali (agak jelas).':'Wajah terdeteksi. Buka mata lebar-lebar…','info','fa-eye'); await sleep(40); continue; }
+          }
+
+          /* tahap capture: hitung descriptor wajah */
+          let full=null;
+          try{ full=await faceapi.detectSingleFace(v,det).withFaceLandmarks().withFaceDescriptor(); }catch(e){ full=null; }
+          if(done) return;
+          if(!full){ await sleep(100); continue; }
+          const photo=Face.snap(v);
+
+          if(opt.mode==='enroll'){
+            samples.push(Array.from(full.descriptor));
+            if(samples.length<3){ say(`Mengambil sampel ${samples.length}/3… tetap hadapkan wajah.`,'info','fa-camera'); await sleep(600); continue; }
+            return finish({ok:true,descs:samples,photo});
+          }
+          const dist=Math.min(...opt.refs.map(ref=>faceapi.euclideanDistance(full.descriptor,ref)));
+          if(dist<=opt.threshold) return finish({ok:true,dist,photo});
+          tries++;
+          if(tries>=3) return finish({ok:false,reason:`Wajah tidak cocok dengan data terdaftar (selisih ${dist.toFixed(2)}). Hubungi admin bila terus gagal.`});
+          say(`Wajah belum cocok (percobaan ${tries}/3). Coba lagi…`,'warn','fa-triangle-exclamation'); await sleep(800);
+        }
+      })();
+    });
+  },
+
+  async enroll(t){
+    if(!confirmBox('Data wajah disimpan sebagai angka (bukan foto) dan hanya dipakai untuk absensi. Lanjutkan pendaftaran wajah?')) return null;
+    const r=await Face.scan({title:'Daftarkan Wajah',mode:'enroll',liveness:settings.faceLiveness});
+    if(!r) return null;
+    if(!r.ok){ toast(r.reason,'error'); return null; }
+    try{ await Store.saveFace(t.nip,r.descs); }
+    catch(e){ toast(e && e.code==='permission-denied' ? 'Wajah sudah terdaftar. Minta admin menghapus data wajah lama bila ingin mendaftar ulang.' : fbMsg(e),'error'); return null; }
+    Store.log(t.nip,'Daftar wajah',t.name); toast('Wajah berhasil didaftarkan.','success');
+    return r;
+  },
+  /* Dipanggil saat absen: kembalikan {photo,dist,enrolled} bila lolos, null bila gagal/batal */
+  async verify(t){
+    const refs=(t.face||[]).map(a=>new Float32Array(a));
+    if(!refs.length){
+      if(!confirmBox('Wajah Anda belum terdaftar. Daftarkan wajah sekarang? (Lakukan sendiri, di tempat terang.)')) return null;
+      const r=await Face.enroll(t); if(!r) return null;
+      return {photo:r.photo,dist:0,enrolled:true};
+    }
+    const r=await Face.scan({title:'Pindai Wajah',mode:'verify',refs,threshold:settings.faceThreshold,liveness:settings.faceLiveness});
+    if(!r) return null;
+    if(!r.ok){ toast(r.reason,'error'); Store.log(t.nip,'Pindai wajah gagal',r.reason); return null; }
+    return r;
+  }
+};
+window.Face=Face;
+
+/* Selfie via kamera web (opsional, bila scan wajah dimatikan) → dataURL JPEG kecil */
+function takeSelfie(){
+  return new Promise(res=>{
+    const o=openModal(`<h3>Foto Selfie</h3><p class="muted">Posisikan wajah di depan kamera.</p><div class="facebox"><video id="cam" autoplay playsinline muted></video></div>
+      <div class="row end"><button class="btn" id="camSkip">Lewati</button><button class="btn green" id="camSnap"><i class="fa-solid fa-camera"></i> Ambil Foto</button></div>`);
+    o.dataset.lock='1'; let stream=null;
+    const done=v=>{ if(stream) stream.getTracks().forEach(t=>t.stop()); closeModal(); res(v); };
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ toast('Kamera tidak tersedia, selfie dilewati.','warn'); return done(''); }
+    navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}}).then(s=>{ stream=s; const v=$('#cam'); if(v) v.srcObject=s; })
+      .catch(()=>{ toast('Izin kamera ditolak, selfie dilewati.','warn'); done(''); });
+    $('#camSkip').onclick=()=>done('');
+    $('#camSnap').onclick=()=>{
+      const v=$('#cam'); if(!v||!v.videoWidth) return toast('Kamera belum siap.','warn');
+      done(Face.snap(v));
+    };
+  });
+}
+
+/* =====================================================================
+   MULAI
+   ===================================================================== */
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && !($('#modalOv') && $('#modalOv').dataset.lock)) closeModal(); });
+
+function updateNet(){ const b=$('#netBanner'); if(b) b.style.display = (CLOUD && !navigator.onLine) ? 'block' : 'none'; }
+window.addEventListener('online',()=>{ updateNet(); if(CLOUD) toast('Koneksi pulih.','success'); });
+window.addEventListener('offline',updateNet);
+
+async function boot(){
+  { const w=W(); S.month=w.m; S.year=w.y; }
+  applyBranding(); updateNet();
+  $('#app').innerHTML=loadingHtml('Memuat aplikasi…');
+  try{
+    const sess=await Store.init();
+    if(sess){
+      try{ S.user=sess; await Store.loadBase(sess); }
+      catch(e){ S.user=null; await Store.logout(); toast(fbMsg(e),'error'); }
+    }
+    if(!S.user) await Store.publicSettings();
+  }catch(e){ showError(e); return; }
+  render();
+}
+
+if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+boot();
+</script>
+</body>
+</html>
